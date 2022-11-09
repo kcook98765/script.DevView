@@ -15,7 +15,6 @@ KEY_NAV_BACK = 92
 ACTION_PARENT_DIR = 9
 ACTION_PREVIOUS_MENU = 10
 
-
 def window(title, content):
     w = TextWindow("script.DevView-textwindow-fullscreen.xml", ADDON_PATH, title=title, content=content)
     w.doModal()
@@ -65,7 +64,7 @@ if __name__ == '__main__':
 
     # now display the custom window with data from the index.html file
     profilePath = xbmcvfs.translatePath( ADDON.getAddonInfo('profile') )
-    file = os.path.join(profilePath, 'index.html')
+    file = os.path.join(profilePath, 'index.txt')
     with xbmcvfs.File(file) as data:
         content = data.read()
     

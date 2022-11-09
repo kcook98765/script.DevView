@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<addon id="script.DevView" name="DevView" version="0.0.9" provider-name="kcook98765">
+<addon id="script.DevView" name="DevView" version="0.0.10" provider-name="kcook98765">
 	<requires>
 		<import addon="xbmc.python" version="3.0.0"/>
+		<import addon="script.module.beautifulsoup4" version="4.9.3" />
 	</requires>
 	<extension point="xbmc.service" library="server.py" />
 	<extension point="xbmc.python.script" library="genreport.py" />

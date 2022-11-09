@@ -454,8 +454,12 @@ class report():
             "System.ProfileThumb": "Shows the Thumbnail image of the currently logged in Kodi user",
             "VideoPlayer.Cover": "Cover of currently playing movie. Note: Deprecated, use Player.Art(type) instead.",
             "Weather.ConditionsIcon": "Image of current weather conditions (NOTE: Can be used to load/refresh weather conditions)",
+
+
+            "Window(Home).ListItem.Budget": "Budget",
+            "Container(99950).Property(Budget)": "Budget",
+
         
-            "ListItem.Property(Param.Info)": "The value of the info= param key in Container.FolderPath. Works with other params. Replace Info with desired param",
             "ListItem.Property(TMDb_ID)": "TMDb ID",
             "ListItem.Property(IMDb_ID)": "IMDb ID",
             "ListItem.Property(TVDb_ID)": "TVDb ID",
@@ -601,12 +605,35 @@ class report():
         container = xbmc.getInfoLabel('System.CurrentControlID')
         
         divider = '<hr>'
+        divider_txt = '-------------------------' + "\n";
     
         content = '<html><head><title>DevView</title></head><body>'
+        content_txt = 'DevView' + "\n";
     
         content = content + '<h1>windowID : ' + str(windowID) + ' / ' + 'Container : ' + str(container) + '</h1>' + "\n"
+        
+        content_txt = content_txt + 'windowID: ' + str(windowID) + ' / ' + 'Container : ' + str(container) + "\n"
 
+# additional header details.....
+# Window.Property(xmlfile)    Home.xml
+# Displays the name of the xml file currently shown
 
+# Window(AddonBrowser).Property(Updated)  11/08/2022 10:51:20 AM
+# Shows the date and time the addon repo was last checked for updates
+
+# System.Time    11:07 AM    Current time
+
+# System.StartupWindow    10000    The Window Kodi will load on startup
+
+# System.ScreenResolution    1918x1002 - Windowed    Screen resolution
+
+# System.ProfileName    Master user    Shows the User name of the currently logged in Kodi user
+
+# System.Date    Tuesday, November 8, 2022    Current date
+
+# System.CurrentControlID    1601    ID of the currently focused control.
+
+# ListItem.DBTYPE    movie
 
 
 
@@ -618,173 +645,254 @@ class report():
 
     
             content = content + divider + '<table border=1><tr><td colspan=2><h1>sys.listitem.getVideoInfoTag() :</h1></td></tr>'  + "\n"
+            
+            content_txt = content_txt + divider_txt + 'sys.listitem.getVideoInfoTag() :' + "\n"
+
         
             videoInfoTag = sys.listitem.getVideoInfoTag()
         
     
             z = videoInfoTag.getActors()
             content = content + "<tr><td>getActors()</td><td>" + str(z) + '</td></tr>' + "\n"
+            content_txt = content_txt + 'getActors() :' + str(z) + "\n"
             z = videoInfoTag.getAlbum()
             content = content + "<tr><td>getAlbum()</td><td>" + str(z) + '</td></tr>' + "\n"
+            content_txt = content_txt + 'getAlbum() :' + str(z) + "\n"
             z = videoInfoTag.getArtist()
             content = content + "<tr><td>getArtist()</td><td>" + str(z) + '</td></tr>' + "\n"
+            content_txt = content_txt + 'getArtist() :' + str(z) + "\n"
             z = videoInfoTag.getCast()
             content = content + "<tr><td>getCast()</td><td>" + str(z) + '</td></tr>' + "\n"
+            content_txt = content_txt + 'getCast() :' + str(z) + "\n"
             z = videoInfoTag.getDbId()
             content = content + "<tr><td>getDbId()</td><td>" + str(z) + '</td></tr>' + "\n"
+            content_txt = content_txt + 'getDbId() :' + str(z) + "\n"
             z = videoInfoTag.getDirector()
             content = content + "<tr><td>getDirector()</td><td>" + str(z) + '</td></tr>' + "\n"
+            content_txt = content_txt + 'getDirector() :' + str(z) + "\n"
             z = videoInfoTag.getDirectors()
             content = content + "<tr><td>getDirectors()</td><td>" + str(z) + '</td></tr>' + "\n"
+            content_txt = content_txt + 'getDirectors() :' + str(z) + "\n"
             z = videoInfoTag.getDuration()
             content = content + "<tr><td>getDuration()</td><td>" + str(z) + '</td></tr>' + "\n"
+            content_txt = content_txt + 'getDuration() :' + str(z) + "\n"
             z = videoInfoTag.getEpisode()
             content = content + "<tr><td>getEpisode()</td><td>" + str(z) + '</td></tr>' + "\n"
+            content_txt = content_txt + 'getEpisode() :' + str(z) + "\n"
             z = videoInfoTag.getFile()
             content = content + "<tr><td>getFile()</td><td>" + str(z) + '</td></tr>' + "\n"
+            content_txt = content_txt + 'getFile() :' + str(z) + "\n"
             z = videoInfoTag.getFilenameAndPath()
             content = content + "<tr><td>getFilenameAndPath()</td><td>" + str(z) + '</td></tr>' + "\n"
+            content_txt = content_txt + 'getFilenameAndPath() :' + str(z) + "\n"
             z = videoInfoTag.getFirstAired()
             content = content + "<tr><td>getFirstAired()</td><td>" + str(z) + '</td></tr>' + "\n"
+            content_txt = content_txt + 'getFirstAired() :' + str(z) + "\n"
             z = videoInfoTag.getFirstAiredAsW3C()
             content = content + "<tr><td>getFirstAiredAsW3C()</td><td>" + str(z) + '</td></tr>' + "\n"
+            content_txt = content_txt + 'getFirstAiredAsW3C() :' + str(z) + "\n"
             z = videoInfoTag.getGenre()
             content = content + "<tr><td>getGenre()</td><td>" + str(z) + '</td></tr>' + "\n"
+            content_txt = content_txt + 'getGenre() :' + str(z) + "\n"
             z = videoInfoTag.getGenres()
             content = content + "<tr><td>getGenres()</td><td>" + str(z) + '</td></tr>' + "\n"
+            content_txt = content_txt + 'getGenres() :' + str(z) + "\n"
             z = videoInfoTag.getIMDBNumber()
             content = content + "<tr><td>getIMDBNumber()</td><td>" + str(z) + '</td></tr>' + "\n"
+            content_txt = content_txt + 'getIMDBNumber() :' + str(z) + "\n"
             z = videoInfoTag.getLastPlayed()
             content = content + "<tr><td>getLastPlayed()</td><td>" + str(z) + '</td></tr>' + "\n"
+            content_txt = content_txt + 'getLastPlayed() :' + str(z) + "\n"
             z = videoInfoTag.getLastPlayedAsW3C()
             content = content + "<tr><td>getLastPlayedAsW3C()</td><td>" + str(z) + '</td></tr>' + "\n"
+            content_txt = content_txt + 'getLastPlayedAsW3C() :' + str(z) + "\n"
             z = videoInfoTag.getMediaType()
             content = content + "<tr><td>getMediaType()</td><td>" + str(z) + '</td></tr>' + "\n"
+            content_txt = content_txt + 'getMediaType() :' + str(z) + "\n"
             z = videoInfoTag.getOriginalTitle()
             content = content + "<tr><td>getOriginalTitle()</td><td>" + str(z) + '</td></tr>' + "\n"
+            content_txt = content_txt + 'getOriginalTitle() :' + str(z) + "\n"
             z = videoInfoTag.getPath()
             content = content + "<tr><td>getPath()</td><td>" + str(z) + '</td></tr>' + "\n"
+            content_txt = content_txt + 'getPath() :' + str(z) + "\n"
             z = videoInfoTag.getPictureURL()
             content = content + "<tr><td>getPictureURL()</td><td>" + str(z) + '</td></tr>' + "\n"
+            content_txt = content_txt + 'getPictureURL() :' + str(z) + "\n"
             z = videoInfoTag.getPlayCount()
             content = content + "<tr><td>getPlayCount()</td><td>" + str(z) + '</td></tr>' + "\n"
+            content_txt = content_txt + 'getPlayCount() :' + str(z) + "\n"
             z = videoInfoTag.getPlot()
             content = content + "<tr><td>getPlot()</td><td>" + str(z) + '</td></tr>' + "\n"
+            content_txt = content_txt + 'getPlot() :' + str(z) + "\n"
             z = videoInfoTag.getPlotOutline()
             content = content + "<tr><td>getPlotOutline()</td><td>" + str(z) + '</td></tr>' + "\n"
+            content_txt = content_txt + 'getPlotOutline() :' + str(z) + "\n"
             z = videoInfoTag.getPremiered()
             content = content + "<tr><td>getPremiered()</td><td>" + str(z) + '</td></tr>' + "\n"
+            content_txt = content_txt + 'getPremiered() :' + str(z) + "\n"
             z = videoInfoTag.getPremieredAsW3C()
             content = content + "<tr><td>getPremieredAsW3C()</td><td>" + str(z) + '</td></tr>' + "\n"
+            content_txt = content_txt + 'getPremieredAsW3C() :' + str(z) + "\n"
             z = videoInfoTag.getRating('imdb')
             content = content + "<tr><td>getRating('imdb')</td><td>" + str(z) + '</td></tr>' + "\n"
+            content_txt = content_txt + "getRating(imdb') :" + str(z) + "\n"
             z = videoInfoTag.getRating('tvdb')
             content = content + "<tr><td>getRating('tvdb')</td><td>" + str(z) + '</td></tr>' + "\n"
+            content_txt = content_txt + "getRating('tvdb') :" + str(z) + "\n"
             z = videoInfoTag.getRating('tmdb')
             content = content + "<tr><td>getRating('tmdb')</td><td>" + str(z) + '</td></tr>' + "\n"
+            content_txt = content_txt + "getRating('tmdb') :" + str(z) + "\n"
             z = videoInfoTag.getRating('anidb')
             content = content + "<tr><td>getRating('anidb')</td><td>" + str(z) + '</td></tr>' + "\n"
+            content_txt = content_txt + "getRating('anidb') :" + str(z) + "\n"
             z = videoInfoTag.getResumeTime()
             content = content + "<tr><td>getResumeTime()</td><td>" + str(z) + '</td></tr>' + "\n"
+            content_txt = content_txt + 'getResumeTime() :' + str(z) + "\n"
             z = videoInfoTag.getSeason()
             content = content + "<tr><td>getSeason()</td><td>" + str(z) + '</td></tr>' + "\n"
+            content_txt = content_txt + 'getSeason() :' + str(z) + "\n"
             z = videoInfoTag.getTagLine()
             content = content + "<tr><td>getTagLine()</td><td>" + str(z) + '</td></tr>' + "\n"
+            content_txt = content_txt + 'getTagLine() :' + str(z) + "\n"
             z = videoInfoTag.getTitle()
             content = content + "<tr><td>getTitle()</td><td>" + str(z) + '</td></tr>' + "\n"
+            content_txt = content_txt + 'getTitle() :' + str(z) + "\n"
             z = videoInfoTag.getTrack()
             content = content + "<tr><td>getTrack()</td><td>" + str(z) + '</td></tr>' + "\n"
+            content_txt = content_txt + 'getTrack() :' + str(z) + "\n"
             z = videoInfoTag.getTrailer()
             content = content + "<tr><td>getTrailer()</td><td>" + str(z) + '</td></tr>' + "\n"
+            content_txt = content_txt + 'getTrailer() :' + str(z) + "\n"
             z = videoInfoTag.getTVShowTitle()
             content = content + "<tr><td>getTVShowTitle()</td><td>" + str(z) + '</td></tr>' + "\n"
+            content_txt = content_txt + 'getTVShowTitle() :' + str(z) + "\n"
             z = videoInfoTag.getUniqueID('imdb')
             content = content + "<tr><td>getUniqueID('imdb')</td><td>" + str(z) + '</td></tr>' + "\n"
+            content_txt = content_txt + "getUniqueID('imdb') :" + str(z) + "\n"
             z = videoInfoTag.getUniqueID('tvdb')
             content = content + "<tr><td>getUniqueID('tvdb')</td><td>" + str(z) + '</td></tr>' + "\n"
+            content_txt = content_txt + "getUniqueID('tvdb') :" + str(z) + "\n"
             z = videoInfoTag.getUniqueID('tmdb')
             content = content + "<tr><td>getUniqueID('tmdb')</td><td>" + str(z) + '</td></tr>' + "\n"
+            content_txt = content_txt + "getUniqueID('tmdb') :" + str(z) + "\n"
             z = videoInfoTag.getUniqueID('anidb')
-            content = content + "<tr><td>getUniqueID('anidb')</td><td>" + str(z) + '</td></tr>' + "\n"        
+            content = content + "<tr><td>getUniqueID('anidb')</td><td>" + str(z) + '</td></tr>' + "\n"
+            content_txt = content_txt + "getUniqueID('anidb') :" + str(z) + "\n"
             z = videoInfoTag.getUserRating()
             content = content + "<tr><td>getUserRating()</td><td>" + str(z) + '</td></tr>' + "\n"
+            content_txt = content_txt + 'getUserRating() :' + str(z) + "\n"
             z = videoInfoTag.getVotes()
             content = content + "<tr><td>getVotes()</td><td>" + str(z) + '</td></tr>' + "\n"
+            content_txt = content_txt + 'getVotes() :' + str(z) + "\n"
             z = videoInfoTag.getVotesAsInt()
             content = content + "<tr><td>getVotesAsInt()</td><td>" + str(z) + '</td></tr>' + "\n"
+            content_txt = content_txt + 'getVotesAsInt() :' + str(z) + "\n"
             z = videoInfoTag.getWriters()
             content = content + "<tr><td>getWriters()</td><td>" + str(z) + '</td></tr>' + "\n"
+            content_txt = content_txt + 'getWriters() :' + str(z) + "\n"
             z = videoInfoTag.getWritingCredits()
             content = content + "<tr><td>getWritingCredits()</td><td>" + str(z) + '</td></tr>' + "\n"
+            content_txt = content_txt + 'getWritingCredits() :' + str(z) + "\n"
             z = videoInfoTag.getYear()
             content = content + "<tr><td>getYear()</td><td>" + str(z) + '</td></tr>' + "\n"
+            content_txt = content_txt + 'getYear() :' + str(z) + "\n"
     
         
             content = content + '</table>'
+            content_txt = content_txt + divider_txt
 
         else:
 #############################################################################
 
             content = content + divider + '<table border=1><tr><td colspan=2><h1>sys.listitem.InfoTagMusic() :</h1></td></tr>'  + "\n"
+            content_txt = content_txt + divider_txt + 'sys.listitem.InfoTagMusic() :' + "\n"
     
             musicinfo = xbmc.InfoTagMusic()
     
             z = musicinfo.getAlbum()
             content = content + "<tr><td>getAlbum()</td><td>" + str(z) + '</td></tr>' + "\n" 
+            content_txt = content_txt + 'getAlbum() :' + str(z) + "\n"
             z = musicinfo.getAlbumArtist()
             content = content + "<tr><td>getAlbumArtist()</td><td>" + str(z) + '</td></tr>' + "\n" 
+            content_txt = content_txt + 'getAlbumArtist() :' + str(z) + "\n"
             z = musicinfo.getArtist()
-            content = content + "<tr><td>getArtist()</td><td>" + str(z) + '</td></tr>' + "\n" 
+            content = content + "<tr><td>getArtist()</td><td>" + str(z) + '</td></tr>' + "\n"
+            content_txt = content_txt + 'getArtist() :' + str(z) + "\n"
             z = musicinfo.getComment()
-            content = content + "<tr><td>getComment()</td><td>" + str(z) + '</td></tr>' + "\n" 
+            content = content + "<tr><td>getComment()</td><td>" + str(z) + '</td></tr>' + "\n"
+            content_txt = content_txt + 'getComment() :' + str(z) + "\n"
             z = musicinfo.getDbId()
-            content = content + "<tr><td>getDbId()</td><td>" + str(z) + '</td></tr>' + "\n" 
+            content = content + "<tr><td>getDbId()</td><td>" + str(z) + '</td></tr>' + "\n"
+            content_txt = content_txt + 'getDbId() :' + str(z) + "\n"
             z = musicinfo.getDisc()
-            content = content + "<tr><td>getDisc()</td><td>" + str(z) + '</td></tr>' + "\n" 
+            content = content + "<tr><td>getDisc()</td><td>" + str(z) + '</td></tr>' + "\n"
+            content_txt = content_txt + 'getDisc() :' + str(z) + "\n"
             z = musicinfo.getDuration()
-            content = content + "<tr><td>getDuration()</td><td>" + str(z) + '</td></tr>' + "\n" 
+            content = content + "<tr><td>getDuration()</td><td>" + str(z) + '</td></tr>' + "\n"
+            content_txt = content_txt + 'getDuration() :' + str(z) + "\n"
             z = musicinfo.getGenre()
-            content = content + "<tr><td>getGenre()</td><td>" + str(z) + '</td></tr>' + "\n" 
+            content = content + "<tr><td>getGenre()</td><td>" + str(z) + '</td></tr>' + "\n"
+            content_txt = content_txt + 'getGenre() :' + str(z) + "\n"
             z = musicinfo.getGenres()
-            content = content + "<tr><td>getGenres()</td><td>" + str(z) + '</td></tr>' + "\n" 
+            content = content + "<tr><td>getGenres()</td><td>" + str(z) + '</td></tr>' + "\n"
+            content_txt = content_txt + 'getGenres() :' + str(z) + "\n"
             z = musicinfo.getLastPlayed()
-            content = content + "<tr><td>getLastPlayed()</td><td>" + str(z) + '</td></tr>' + "\n" 
+            content = content + "<tr><td>getLastPlayed()</td><td>" + str(z) + '</td></tr>' + "\n"
+            content_txt = content_txt + 'getLastPlayed() :' + str(z) + "\n"
             z = musicinfo.getLastPlayedAsW3C()
-            content = content + "<tr><td>getLastPlayedAsW3C()</td><td>" + str(z) + '</td></tr>' + "\n" 
+            content = content + "<tr><td>getLastPlayedAsW3C()</td><td>" + str(z) + '</td></tr>' + "\n"
+            content_txt = content_txt + 'getLastPlayedAsW3C() :' + str(z) + "\n"
             z = musicinfo.getListeners()
-            content = content + "<tr><td>getListeners()</td><td>" + str(z) + '</td></tr>' + "\n" 
+            content = content + "<tr><td>getListeners()</td><td>" + str(z) + '</td></tr>' + "\n"
+            content_txt = content_txt + 'getListeners() :' + str(z) + "\n"
             z = musicinfo.getLyrics()
-            content = content + "<tr><td>getLyrics()</td><td>" + str(z) + '</td></tr>' + "\n" 
+            content = content + "<tr><td>getLyrics()</td><td>" + str(z) + '</td></tr>' + "\n"
+            content_txt = content_txt + 'getLyrics() :' + str(z) + "\n"
             z = musicinfo.getMediaType()
-            content = content + "<tr><td>getMediaType()</td><td>" + str(z) + '</td></tr>' + "\n" 
+            content = content + "<tr><td>getMediaType()</td><td>" + str(z) + '</td></tr>' + "\n"
+            content_txt = content_txt + 'getMediaType() :' + str(z) + "\n"
             z = musicinfo.getMusicBrainzAlbumArtistID()
-            content = content + "<tr><td>getMusicBrainzAlbumArtistID()</td><td>" + str(z) + '</td></tr>' + "\n" 
+            content = content + "<tr><td>getMusicBrainzAlbumArtistID()</td><td>" + str(z) + '</td></tr>' + "\n"
+            content_txt = content_txt + 'getMusicBrainzAlbumArtistID() :' + str(z) + "\n"
             z = musicinfo.getMusicBrainzAlbumID()
-            content = content + "<tr><td>getMusicBrainzAlbumID()</td><td>" + str(z) + '</td></tr>' + "\n" 
+            content = content + "<tr><td>getMusicBrainzAlbumID()</td><td>" + str(z) + '</td></tr>' + "\n"
+            content_txt = content_txt + 'getMusicBrainzAlbumID() :' + str(z) + "\n"
             z = musicinfo.getMusicBrainzArtistID()
-            content = content + "<tr><td>getMusicBrainzArtistID()</td><td>" + str(z) + '</td></tr>' + "\n" 
+            content = content + "<tr><td>getMusicBrainzArtistID()</td><td>" + str(z) + '</td></tr>' + "\n"
+            content_txt = content_txt + 'getMusicBrainzArtistID() :' + str(z) + "\n"
             z = musicinfo.getMusicBrainzReleaseGroupID()
-            content = content + "<tr><td>getMusicBrainzReleaseGroupID()</td><td>" + str(z) + '</td></tr>' + "\n" 
+            content = content + "<tr><td>getMusicBrainzReleaseGroupID()</td><td>" + str(z) + '</td></tr>' + "\n"
+            content_txt = content_txt + 'getMusicBrainzReleaseGroupID() :' + str(z) + "\n"
             z = musicinfo.getMusicBrainzTrackID()
-            content = content + "<tr><td>getMusicBrainzTrackID()</td><td>" + str(z) + '</td></tr>' + "\n" 
+            content = content + "<tr><td>getMusicBrainzTrackID()</td><td>" + str(z) + '</td></tr>' + "\n"
+            content_txt = content_txt + 'getMusicBrainzTrackID() :' + str(z) + "\n"
             z = musicinfo.getPlayCount()
-            content = content + "<tr><td>getPlayCount()</td><td>" + str(z) + '</td></tr>' + "\n" 
+            content = content + "<tr><td>getPlayCount()</td><td>" + str(z) + '</td></tr>' + "\n"
+            content_txt = content_txt + 'getPlayCount() :' + str(z) + "\n"
             z = musicinfo.getRating()
-            content = content + "<tr><td>getRating()</td><td>" + str(z) + '</td></tr>' + "\n" 
+            content = content + "<tr><td>getRating()</td><td>" + str(z) + '</td></tr>' + "\n"
+            content_txt = content_txt + 'getRating() :' + str(z) + "\n"
             z = musicinfo.getReleaseDate()
-            content = content + "<tr><td>getReleaseDate()</td><td>" + str(z) + '</td></tr>' + "\n" 
+            content = content + "<tr><td>getReleaseDate()</td><td>" + str(z) + '</td></tr>' + "\n"
+            content_txt = content_txt + 'getReleaseDate() :' + str(z) + "\n"
             z = musicinfo.getTitle()
-            content = content + "<tr><td>getTitle()</td><td>" + str(z) + '</td></tr>' + "\n" 
+            content = content + "<tr><td>getTitle()</td><td>" + str(z) + '</td></tr>' + "\n"
+            content_txt = content_txt + 'getTitle() :' + str(z) + "\n"
             z = musicinfo.getTrack()
-            content = content + "<tr><td>getTrack()</td><td>" + str(z) + '</td></tr>' + "\n" 
+            content = content + "<tr><td>getTrack()</td><td>" + str(z) + '</td></tr>' + "\n"
+            content_txt = content_txt + 'getTrack() :' + str(z) + "\n"
             z = musicinfo.getURL()
-            content = content + "<tr><td>getURL()</td><td>" + str(z) + '</td></tr>' + "\n" 
+            content = content + "<tr><td>getURL()</td><td>" + str(z) + '</td></tr>' + "\n"
+            content_txt = content_txt + 'getURL() :' + str(z) + "\n"
             z = musicinfo.getUserRating()
-            content = content + "<tr><td>getUserRating()</td><td>" + str(z) + '</td></tr>' + "\n" 
+            content = content + "<tr><td>getUserRating()</td><td>" + str(z) + '</td></tr>' + "\n"
+            content_txt = content_txt + 'getUserRating() :' + str(z) + "\n"
             z = musicinfo.getYear()
-            content = content + "<tr><td>getYear()</td><td>" + str(z) + '</td></tr>' + "\n" 
+            content = content + "<tr><td>getYear()</td><td>" + str(z) + '</td></tr>' + "\n"
+            content_txt = content_txt + 'getYear() :' + str(z) + "\n"
     
             content = content + '</table>'
+            content_txt = content_txt + divider_txt
 
 
 
@@ -792,6 +900,7 @@ class report():
         outlist = sorted(self.listitem_dict.items())
         
         content = content + divider + '<table border=1><tr><td colspan=2><h1>xbmc.getInfoLabel :</h1></td></tr>'  + "\n"
+        content_txt = content_txt + divider_txt + 'xbmc.getInfoLabel :' + "\n"
         
         for key, value in outlist :
             
@@ -802,20 +911,23 @@ class report():
             
             if lookup is not None and lookup != "" and lookup != key:
                 xbmcresult = xbmc.getInfoLabel(key)
+                xbmcresult_txt = xbmcresult
                 x = re.search("^http", xbmcresult)
                 if x and key != 'ListItem.Path' and key != 'ListItem.FileNameAndPath':
-                    xbmcresult = xbmcresult + '<img src="' + xbmcresult + '" width=200 height=200>'     
+                    xbmcresult = xbmcresult + '<img src="' + xbmcresult + '" height=200>'     
                 
                 content = content + '<tr><td>' + key + '</td><td>' + xbmcresult + '</td>' + '<td>' + value + '</td></tr>' + "\n"
+                content_txt = content_txt + key + ' : ' + xbmcresult_txt + ' : ' + value + "\n"
     
         content = content + '</table>'
+        content_txt = content_txt + divider_txt
     
         file = xbmc.getInfoLabel("ListItem.FileNameAndPath")
     
         if not file or file == "-1":
             file = "ListItem.FileNameAndPath not found"
-            content = content + 'ListItem.FileNameAndPath not found, unable to display data.'
-            return content
+            content = content + 'ListItem.FileNameAndPath not found, unable to display additional data.'
+            content_txt = content_txt + 'ListItem.FileNameAndPath not found, unable to display additional data.'
         else:
     
             command = '{"jsonrpc": "2.0", ' \
@@ -844,6 +956,11 @@ class report():
                 content = content + "<pre>\n"
                 content = content + json.dumps(result, indent=2)
                 content = content +  "</pre>\n"
+                
+                content_txt = content_txt + 'Jsonrpc VideoLibrary.GetMovies data available:' + divider_txt + "\n"
+                content_txt = content_txt + command + "\n"
+                content_txt = content_txt + json.dumps(result, indent=2) + "\n";
+                content_txt = content_txt + divider_txt + "\n"
     
     
             command = '{"jsonrpc": "2.0", ' \
@@ -874,6 +991,11 @@ class report():
                 content = content + "<pre>\n"
                 content = content + json.dumps(result, indent=2)
                 content = content +  "</pre>\n"
+                content_txt = content_txt + 'Jsonrpc VideoLibrary.GetEpisodes data available:' + divider_txt + "\n"
+                content_txt = content_txt + command + "\n"
+                content_txt = content_txt + json.dumps(result, indent=2) + "\n";
+                content_txt = content_txt + divider_txt + "\n"
+
     
             song_file = xbmc.getInfoLabel('ListItem.Path')
     
@@ -909,11 +1031,21 @@ class report():
                 content = content + "<pre>\n"
                 content = content + json.dumps(result, indent=2)
                 content = content +  "</pre>\n"
+                content_txt = content_txt + 'Jsonrpc VideoLibrary.GetEpisodes data available:' + divider_txt + "\n"
+                content_txt = content_txt + command + "\n"
+                content_txt = content_txt + json.dumps(result, indent=2) + "\n";
+                content_txt = content_txt + divider_txt + "\n"
+
             
             content = content + '</body></html>' + "\n"
             
         file = os.path.join(profilePath, 'index.html')
         buffer = content
+        with xbmcvfs.File(file, 'w') as f:
+            result = f.write(buffer)
+            
+        file = os.path.join(profilePath, 'index.txt')
+        buffer = content_txt
         with xbmcvfs.File(file, 'w') as f:
             result = f.write(buffer)
     

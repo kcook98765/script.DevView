@@ -2,7 +2,7 @@ import xbmc, xbmcgui, xbmcaddon, xbmcvfs
 import sys, re, os
 import socketserver
 import json
-from genreport import *
+
 
 ADDON = xbmcaddon.Addon()
 ADDON_PATH = ADDON.getAddonInfo("path")
@@ -25,6 +25,11 @@ class MyTCPHandler(socketserver.BaseRequestHandler):
         output = 'HTTP/1.0 200 OK\n'
         output = output + 'Content-Type: text/html\n'
         output = output + "\n"
+
+        
+#        xbmc.executebuiltin('RunScript(script.myscript)')
+         
+#        RunScript(special://home/addons/script.tvguide.fullscreen/play.py)
         
 #        thisreport = report()
 #        thisreport.gather_data()
