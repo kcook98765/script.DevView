@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<addon id="script.DevView" name="DevView" version="0.0.10" provider-name="kcook98765">
+<addon id="script.DevView" name="DevView" version="0.0.11" provider-name="kcook98765">
 	<requires>
 		<import addon="xbmc.python" version="3.0.0"/>
 		<import addon="script.module.beautifulsoup4" version="4.9.3" />
@@ -26,7 +26,8 @@
 			<icon>icon.png</icon>
 		</assets>
 		<news>
+V0.0.11 Temp comment out nexus only commands
 
-V0.0.1 Initial Version</news>
+V0.0.10 Initial Version</news>
 	</extension>
 </addon>
