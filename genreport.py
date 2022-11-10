@@ -190,7 +190,7 @@ class report():
             "ListItem.NextStartTime": "The start time of the next item (PVR).",
             "ListItem.NextTitle": "The title of the next item (PVR).",
             "ListItem.OriginalTitle": "The original title of the currently selected movie in a container.",
-            "ListItem.Overlay": "The overlay icon status of the currently selected item in a list or thumb control. compressed file – OverlayRAR.png watched – OverlayWatched.png unwatched – OverlayUnwatched.png locked – OverlayLocked.png",
+            "ListItem.Overlay": "The overlay icon status of the currently selected item in a list or thumb control. compressed file - OverlayRAR.png watched - OverlayWatched.png unwatched - OverlayUnwatched.png locked - OverlayLocked.png",
             "ListItem.Path": "The complete path of the currently selected song or movie in a container.",
             "ListItem.PercentPlayed": "The percentage value [0-100] of how far the selected video has been played.",
             "ListItem.PictureAperture": "The F-stop used to take the selected picture. NoteThis is the value of the EXIF FNumber tag (hex code 0x829D).",
