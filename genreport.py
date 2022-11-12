@@ -332,7 +332,7 @@ class report():
                                 content = content + format_report_html(cq_function_name,'<font color=red>dir(getVideoInfoTag) not found!</font>',q_notes,q_v19,q_v20)
 
                     else:
-                        if q_V19 == 'U':
+                        if q_v19 == 'U':
                             content_txt = content_txt + format_report_txt(q_function_name,'[COLOR RED]N/A[/COLOR]',q_notes,q_v19,q_v20)
                             content = content + format_report_html(q_function_name,'<font color=red>N/A</font>',q_notes,q_v19,q_v20)
                         else:
