@@ -1,0 +1,80 @@
+getAlbum(),video,,string,To get the album name (for musicvideos) ,A,A
+getActors(),video,,list,Get the cast of the video if available.,U,N
+getArtist(),video,,string,To get the artist name (for musicvideos),A,A
+getCast(),video,,string,To get the cast of the video when available.,A,D
+getDbId(),video,,integer,Get identification number of item in database,A,A
+getDirector(),video,,string,Get film director who has made the film (if present).,A,D
+getDirectors(),video,,list,Get a list of film directors who have made the film (if present). ,U,N
+getDuration(),video,,unsigned int,To get the duration,A,A
+getEpisode(),video,,integer,To get episode number of a series,A,A
+getFile(),video,,string,To get the video file name.,A,A
+getFilenameAndPath(),video,,string,To get the full path with filename where the video is stored.,A,A
+getFirstAired(),video,,string,Returns first aired date as string from info tag.,A,D
+getFirstAiredAsW3C(),video,,string,Get first aired date as string in W3C format (YYYY-MM-DD). ,U,N
+getGenre(),video,,string,To get the Video Genre if available.,A,D
+getGenres(),video,,list,Get the list of Video Genres if available.,U,N
+getIMDBNumber(),video,,string,To get the IMDb number of the video (if present).,A,A
+getLastPlayed(),video,,string,Get the last played date / time as string.,A,D
+getLastPlayedAsW3C(),video,,string,Get last played datetime as string in W3C format (YYYY-MM-DDThh:mm:ssTZD). ,U,N
+getMediaType(),video,,string,"Get the media type of the video. One of video, set, musicvideo, movie, tvshow, season or epidoe returned",A,A
+getOriginalTitle(),video,,string,To get the original title of the video.,A,A
+getPath(),video,,string,To get the path where the video is stored. ,A,A
+getPictureURL(),video,,string,Get a picture URL of the video to show as screenshot.,A,A
+getPlayCount(),video,,integer,To get the number of plays of the video.,A,A
+getPlot(),video,,string,Get the plot of the video if present.,A,A
+getPlotOutline(),video,,string,Get the outline plot of the video if present.,A,A
+getPremiered(),video,,string,"To get premiered date of the video, if available.",A,D
+getPremieredAsW3C(),video,,string,Get premiered date as string in W3C format (YYYY-MM-DD).,U,N
+getRating(),video,,float,Get the video rating if present as float (double where supported).,A,A
+getRating(),video,imdb tvdb tmdb anidb,float,Get the video rating if present as float (double where supported).,U,N
+getResumeTime(),video,,double,Gets the resume time of the video item.,U,N
+getSeason(),video,,integer,To get season number of a series,A,A
+getTagLine(),video,,string,Get video tag line if available.,A,A
+getTitle(),video,,string,Get the video title.,A,A
+getTrack(),video,,int,To get the track number (for musicvideos),A,A
+getTrailer(),video,,string,To get the path where the trailer is stored.,U,N
+getTVShowTitle(),video,,string,Get the video TV show title.,A,A
+getUniqueID(),video,imdb tvdb tmdb anidb,string,Get the unique ID of the given key. A unique ID is an identifier used by a (online) video database used to identify a video in its database.,U,N
+getUserRating(),video,,integer,Get the user rating if present.,A,A
+getVotes(),video,,string,Get the video votes if available from video info tag.,A,D
+getVotesAsInt(),video,imdb tvdb tmdb anidb,integer,Get the votes of the rating (if available) as an integer.,U,N
+getWriters(),video,,list,Get the list of writers (if present) from video info tag.,U,N
+getWritingCredits(),video,,string,Get the writing credits if present from video info tag.,A,D
+getYear(),video,,integer,Get production year of video if present.,A,A
+getDbId(),music,,integer,Get identification number of tag in database.,A,A
+getURL(),music,,string,Returns url of source as string from music info tag.,A,A
+getTitle(),music,,string,Returns the title from music as string on info tag.,A,A
+getMediaType(),music,,string,"Get the media type of the music item. Returns artist, album or song",A,A
+getArtist(),music,,string,Returns the artist from music as string if present. ,A,A
+getAlbum(),music,,string,Returns the album from music tag as string if present. ,A,A
+getAlbumArtist(),music,,string,Returns the album artist from music tag as string if present.,A,A
+getGenre(),music,,string,Returns the genre name from music tag as string if present.,A,D
+getGenres(),music,,list,Returns the list of genres from music tag if present.,U,N
+getDuration(),music,,integer,Returns the duration of music as integer from info tag.,A,A
+getYear(),music,,integer,Returns the year of music as integer from info tag. ,U,N
+getRating(),music,,integer,Returns the scraped rating as integer.,A,A
+getUserRating(),music,,integer,Returns the user rating as integer (-1 if not existing) ,A,A
+getTrack(),music,,integer,Returns the track number (if present) from music info tag as integer.,A,A
+getDisc(),music,,integer,Returns the disk number (if present) from music info tag as integer.,A,A
+getReleaseDate(),music,,string,Returns the release date as string from music info tag (if present).,A,A
+getListeners(),music,,integer,Returns the listeners as integer from music info tag.,A,A
+getPlayCount(),music,,integer,Returns the number of carried out playbacks.,A,A
+getLastPlayed(),music,,string,Returns last played time as string from music info tag.,A,D
+getLastPlayedAsW3C(),music,,string,Returns last played time as string in W3C format (YYYY-MM-DDThh:mm:ssTZD). ,U,N
+getComment(),music,,string,Returns comment as string from music info tag.,A,A
+getLyrics(),music,,string,Returns a string from lyrics. ,A,A
+getMusicBrainzTrackID(),music,,string,Returns the MusicBrainz Recording ID from music info tag (if present).,N,A
+getMusicBrainzArtistID(),music,,list,Returns the MusicBrainz Artist IDs from music info tag (if present).,N,A
+getMusicBrainzAlbumID(),music,,string,Returns the MusicBrainz Release ID from music info tag (if present).,N,A
+getMusicBrainzReleaseGroupID(),music,,string,Returns the MusicBrainz Release Group ID from music info tag (if present).,N,A
+getMusicBrainzAlbumArtistID(),music,,list,Returns the MusicBrainz Release Artist IDs from music info tag (if present).,N,A
+getTitle(),game,,string,Gets the title of the game.,U,N
+getPlatform(),game,,string,Gets the platform on which the game is run.,U,N
+getGenres(),game,,list,Gets the genres of the game.,U,N
+getPublisher(),game,,string,Gets the publisher of the game. ,U,N
+getDeveloper(),game,,string,Gets the developer of the game. ,U,N
+getOverview(),game,,string,Gets the overview of the game. ,U,N
+getYear(),game,,integer,Gets the year in which the game was published.,U,N
+getGameClient(),game,,string,Gets the add-on ID of the game client executing the game. ,U,N
+getResolution(),picture,,string,"Get the resolution of the picture in the format ""w x h"".",U,N
+getDirector(),picture,,string,Get the date and time at which the picture was taken in W3C format. ,U,N

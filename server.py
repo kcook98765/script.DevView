@@ -22,28 +22,58 @@ class MyTCPHandler(socketserver.BaseRequestHandler):
 #        global thisreport
         # self.request is the TCP socket connected to the client
         self.data = self.request.recv(1024).strip()
-        output = 'HTTP/1.0 200 OK\n'
-        output = output + 'Content-Type: text/html\n'
-        output = output + "\n"
-
-        
-#        xbmc.executebuiltin('RunScript(script.myscript)')
-         
-#        RunScript(special://home/addons/script.tvguide.fullscreen/play.py)
-        
-#        thisreport = report()
-#        thisreport.gather_data()
-        
-        
         
         profilePath = xbmcvfs.translatePath( ADDON.getAddonInfo('profile') )
-        file = os.path.join(profilePath, 'index.html')
-        with xbmcvfs.File(file) as data:
-            content = data.read()
 
-        output = output + content
-        bytes = output.encode(encoding='UTF-8')
-        self.request.sendall(bytes)
+        # screenshot available, alter code to look for "png" request and serve it up
+        # screenshot_file = file = os.path.join(profilePath, 'screenshot.png')
+        
+        debug = 'DevView DEBUG http server saw: ' + str(self.data)
+        xbmc.log(debug, level=xbmc.LOGINFO)        
+        
+        x = re.search("screenshot\.png", str(self.data))
+
+        
+        if x:
+
+            
+            
+            file = os.path.join(profilePath, 'screenshot.png')
+            data = xbmcvfs.File(file)
+            
+            img = data.readBytes()
+            
+            size = xbmcvfs.File(file).size()
+            
+            size = str(size)
+
+            size = size.encode('utf-8')
+
+            output = b'HTTP/1.0 200 OK\n'
+            output = output + b'Content-Type: image/png\n'
+            output = output + b'Content-Length: ' + size + b"\n"
+            output = output + b"\n"
+            output = output + img
+            
+            self.request.sendall(output)
+     
+            
+        else:
+        
+            output = 'HTTP/1.0 200 OK\n'
+            output = output + 'Content-Type: text/html\n'
+            output = output + "\n"
+            
+            
+            file = os.path.join(profilePath, 'index.html')
+            with xbmcvfs.File(file) as data:
+                content = data.read()
+    
+            output = output + content
+        
+            bytes = output.encode(encoding='UTF-8')
+
+            self.request.sendall(bytes)
 
 
 if __name__ == '__main__':
