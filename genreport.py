@@ -116,7 +116,7 @@ class report():
             x = x + ' :: ' + label+ ' :: '
             
             
-            x = x + str(result) +"\n" + str(notes) + "\n" + '------------------------------------' + "\n"
+            x = x + str(result) +"\n[COLOR grey]" + str(notes) + "[/COLOR]\n" + '------------------------------------' + "\n"
     
             return x
             
@@ -244,7 +244,8 @@ class report():
 # ListItem.DBTYPE    movie
 
 
-
+        json_fileandpath = ''
+        json_path = ''
 
 
         dbtype = xbmc.getInfoLabel('ListItem.DBTYPE')
@@ -267,7 +268,7 @@ class report():
             
             
             json_fileandpath = videoInfoTag.getFilenameAndPath()
-            
+            json_path = videoInfoTag.getPath()
             
 
             # open DB, select all appropriate entries for this dbtype
@@ -378,13 +379,131 @@ class report():
          
          
         else:
-            musicinfo = xbmc.InfoTagMusic()
             
-            # this probably works (see similar above for non songs) , scan for "getxxxx" in result!
+
 #            whatup = dir(musicinfo)
 #            content= content + "<tr><td>test dir : </td><td>" + str(whatup) + '</td></tr>' + "\n" 
 #            content_txt = content_txt + 'test dir :' + str(whatup) + "\n"
-             
+            content = content + divider + '<table border=1><tr><td colspan=4><h1>sys.listitem.getMusicInfoTag() :</h1></td></tr>'  + "\n"
+            
+            
+            content = content + '<tr><td>Version</td><td>Function Call</td><td>Result</td><td>Notes</td></tr>' + "\n"
+            
+            content_txt = content_txt + divider_txt + 'sys.listitem.getMusicInfoTag() :' + "\n"
+        
+            musicinfo = sys.listitem.getMusicInfoTag()
+
+            # See what "get" options are available
+            whatup = dir(musicinfo)
+            
+            
+            json_fileandpath = musicinfo.getURL()
+            
+            
+
+            # open DB, select all appropriate entries for this dbtype
+            query = "SELECT function_name,data_type,keys,return_type,notes,V19,V20 FROM infotag WHERE data_type = 'music' ORDER BY function_name"
+            try:
+                cursor = self.DB.cursor()
+                cursor.execute(query)
+                db_data = cursor.fetchall()
+                
+            except:
+                content= content + '<tr><td>DB Connection/sql error</td><td></td></tr>' + "\n" 
+                content_txt = content_txt + 'DB Connection/sql error'  + "\n" 
+            
+            else:   
+                
+                for stuff in db_data:
+                    q_function_name = stuff[0]
+                    cq_function_name = re.sub(r"\(\)$", '', q_function_name)
+                    q_data_type = stuff[1]
+                    q_keys = stuff[2]
+                    q_return_type = stuff[3]
+                    q_notes = stuff[4]
+                    q_v19 = stuff[5]
+                    q_v20 = stuff[6]       
+                    
+                    if build_version == '20':
+                        if q_v20 == 'U':
+                            content_txt = content_txt + format_report_txt(q_function_name,'[COLOR RED]N/A[/COLOR]',q_notes,q_v19,q_v20)
+                            content = content + format_report_html(q_function_name,'<font color=red>N/A</font>',q_notes,q_v19,q_v20)
+                        else:
+                            if cq_function_name in whatup:
+                                try:
+                                    f = getattr(musicinfo, cq_function_name)
+                                except:
+                                    content= content + '<tr><td>gettattr failure</td><td>' + cq_function_name + '</td></tr>' + "\n" 
+                                    content_txt = content_txt + 'gettattr failure :' + cq_function_name + "\n" 
+                                else:
+                                    if q_keys != '':
+                                        keys = q_keys.split()
+                                        for thing in keys:
+                                            try:
+                                                this_thing = f(thing)
+                                            except:
+                                                content= content + '<tr><td>function failure</td><td>' + thing + '</td></tr>' + "\n" 
+                                                content_txt = content_txt + 'function failure :' + thing + "\n" 
+                                            else:
+                                                lbl = cq_function_name + "('" + thing + "')"
+                                                content_txt = content_txt + format_report_txt(lbl,this_thing,q_notes,q_v19,q_v20)
+                                                content = content + format_report_html(lbl,this_thing,q_notes,q_v19,q_v20)
+                                    else:
+                                        try:
+                                            this_thing = f()
+                                        except:
+                                            content= content + '<tr><td>function failure</td><td>' + thing + '</td></tr>' + "\n" 
+                                            content_txt = content_txt + 'function failure :' + thing + "\n" 
+                                        else:
+                                            content_txt = content_txt + format_report_txt(q_function_name,this_thing,q_notes,q_v19,q_v20)
+                                            content = content + format_report_html(q_function_name,this_thing,q_notes,q_v19,q_v20)
+                            
+                            else:
+                                content_txt = content_txt + format_report_txt(cq_function_name,'[COLOR RED]dir(getVideoInfoTag) not found![/COLOR]',q_notes,q_v19,q_v20)
+                                content = content + format_report_html(cq_function_name,'<font color=red>dir(getVideoInfoTag) not found!</font>',q_notes,q_v19,q_v20)
+
+                    else:
+                        if q_v19 == 'U':
+                            content_txt = content_txt + format_report_txt(q_function_name,'[COLOR RED]N/A[/COLOR]',q_notes,q_v19,q_v20)
+                            content = content + format_report_html(q_function_name,'<font color=red>N/A</font>',q_notes,q_v19,q_v20)
+                        else:
+                            if cq_function_name in whatup:
+                                try:
+                                    f = getattr(musicinfo, cq_function_name)
+                                except:
+                                    content= content + '<tr><td>gettattr failure</td><td>' + cq_function_name + '</td></tr>' + "\n" 
+                                    content_txt = content_txt + 'gettattr failure :' + cq_function_name + "\n" 
+                                else:
+
+                                    if q_keys != '':
+                                        keys = q_keys.split()
+                                        for thing in keys:
+                                            try:
+                                                this_thing = f(thing)
+                                            except:
+                                                content= content + '<tr><td>function failure</td><td>' + thing + '</td></tr>' + "\n" 
+                                                content_txt = content_txt + 'function failure :' + thing + "\n" 
+                                            else:
+                                                lbl = cq_function_name + "('" + thing + "')"
+                                                content_txt = content_txt + format_report_txt(lbl,this_thing,q_notes,q_v19,q_v20)
+                                                content = content + format_report_html(lbl,this_thing,q_notes,q_v19,q_v20)
+
+                                    else:
+                                        try:
+                                            this_thing = f()
+                                        except:
+                                            content= content + '<tr><td>function failure</td><td>' + thing + '</td></tr>' + "\n" 
+                                            content_txt = content_txt + 'function failure :' + thing + "\n" 
+                                        else:
+                                            content_txt = content_txt + format_report_txt(q_function_name,this_thing,q_notes,q_v19,q_v20)
+                                            content = content + format_report_html(q_function_name,this_thing,q_notes,q_v19,q_v20)
+                                              
+                                        
+                            else:
+                                content_txt = content_txt + format_report_txt(q_function_name,'[COLOR RED]dir(getMusicInfoTag) not found![/COLOR]',q_notes,q_v19,q_v20)
+                                content = content + format_report_html(q_function_name,'<font color=red>dir(getMusicInfoTag) not found!</font>',q_notes,q_v19,q_v20)
+                                
+            content = content + '</table>'             
                              
                          
 
@@ -461,7 +580,7 @@ class report():
                         xbmcresult = xbmcresult + '<img src="' + xbmcresult + '" height=200>'     
                     
                     content = content + '<tr><td>' + key + '</td><td>' + xbmcresult + '</td>' + '<td>' + q_notes + '</td></tr>' + "\n"
-                    content_txt = content_txt + key + ' : ' + xbmcresult_txt + ' : ' + "\n[COLOR green]" + q_notes + "[/COLOR]\n"
+                    content_txt = content_txt + key + ' : ' + xbmcresult_txt + ' : ' + "\n[COLOR grey]" + q_notes + "[/COLOR]\n"
     
         
             content = content + '</table>'
@@ -470,13 +589,32 @@ class report():
             if json_fileandpath is None or json_fileandpath == '':
                 json_fileandpath = xbmc.getInfoLabel('ListItem.FileNameAndPath')
 
-        file = json_fileandpath
+            if json_path is None or json_path == '':
+                json_path = xbmc.getInfoLabel('ListItem.Path')
+
+
+        filter = ''
+
+        if json_fileandpath is not None and json_fileandpath != '':
+            
+            if json_path is not None and json_path != '':
+                
+                json_file = re.sub(r"^{}".format(json_path), '', json_fileandpath)
+                
+                filter = '{"or" : [ { "and" : [{"field": "filename", "operator": "is", "value": "%s"},' % json_file
+                filter = filter + '{"field": "path", "operator": "is", "value": "%s"}]},'  % json_path
+                filter = filter + '{"field": "filename", "operator": "is", "value": "%s"}]}' % json_fileandpath
+            else:
+                filter = '{"field": "filename", "operator": "is", "value": "%s"}' % json_fileandpath
+
+
+        
         
         
         
         
     
-        if not file or file == "-1":
+        if not filter or filter == "-1":
             file = "ListItem.FileNameAndPath not found"
             content = content + 'ListItem.FileNameAndPath not found, unable to display additional data.'
             content_txt = content_txt + 'ListItem.FileNameAndPath not found, unable to display additional data.'
@@ -485,20 +623,24 @@ class report():
             command = '{"jsonrpc": "2.0", ' \
                     '"method": "VideoLibrary.GetMovies", ' \
                     '"params": { ' \
-                    '"filter": {"field": "filename", "operator": "is", "value": "%s"}, ' \
+                    '"filter": %s, ' \
                     '"sort": { "order": "ascending", "method": "label" }, ' \
                     '"properties": ["dateadded", "file", "lastplayed", "plot", "title", "art", "playcount", ' \
                     '"streamdetails", "director", "resume", "runtime", "plotoutline", "sorttitle", ' \
                     '"cast", "votes", "showlink", "top250", "trailer", "year", "country", ' \
                     '"studio", "set", "genre", "mpaa", "setid", "rating", "tag", "tagline", ' \
                     '"writer", "originaltitle", "imdbnumber", "uniqueid"] ' \
-                    '}, "id": 1}' % file            
+                    '}, "id": 1}' % filter            
     
     #    debug = 'DevView DEBUG json call: ' + str(command)
     #    xbmc.log(debug, level=xbmc.LOGINFO)
     
     
             result = json.loads(xbmc.executeJSONRPC(command))
+
+#           content = content + command + "\n"
+#           content_txt = content_txt + command + "\n"
+
             
             matches = result['result']['limits']['total']
             
@@ -513,12 +655,21 @@ class report():
                 content_txt = content_txt + command + "\n"
                 content_txt = content_txt + json.dumps(result, indent=2) + "\n";
                 content_txt = content_txt + divider_txt + "\n"
+
+            else:
+                content = content +  '<h1>Jsonrpc VideoLibrary.GetMovies data not available via json:</h1>' + divider + "\n"
+                content = content + command + "\n"
+                
+                content_txt = content_txt + 'Jsonrpc VideoLibrary.GetMovies data not available via json:' + divider_txt + "\n"
+                content_txt = content_txt + command + "\n"
+            
+
     
     
             command = '{"jsonrpc": "2.0", ' \
                     '"method": "VideoLibrary.GetEpisodes", ' \
                     '"params": { ' \
-                    '"filter": {"field": "filename", "operator": "is", "value": "%s"}, ' \
+                    '"filter": %s, ' \
                     '"sort": { "order": "ascending", "method": "label" }, ' \
                     '"properties": [ "title", "plot", "votes", "rating", ' \
                     '"writer","firstaired","playcount","runtime","director", ' \
@@ -527,7 +678,7 @@ class report():
                     '"thumbnail","file","resume","tvshowid","dateadded", ' \
                     '"uniqueid","art","specialsortseason","specialsortepisode", ' \
                     '"userrating","seasonid","ratings"] ' \
-                    '}, "id": 1}' % file            
+                    '}, "id": 1}' % filter            
     
     #    debug = 'DevView DEBUG json call: ' + str(command)
     #    xbmc.log(debug, level=xbmc.LOGINFO)
@@ -547,6 +698,13 @@ class report():
                 content_txt = content_txt + command + "\n"
                 content_txt = content_txt + json.dumps(result, indent=2) + "\n";
                 content_txt = content_txt + divider_txt + "\n"
+
+            else:
+                content = content +  '<h1>Jsonrpc VideoLibrary.GetEpisodes data not available via json:</h1>' + divider + "\n"
+                content = content + command + "\n"
+                
+                content_txt = content_txt + 'Jsonrpc VideoLibrary.GetEpisodes data not available via json:' + divider_txt + "\n"
+                content_txt = content_txt + command + "\n"
 
     
             song_file = xbmc.getInfoLabel('ListItem.Path')
@@ -587,6 +745,13 @@ class report():
                 content_txt = content_txt + command + "\n"
                 content_txt = content_txt + json.dumps(result, indent=2) + "\n";
                 content_txt = content_txt + divider_txt + "\n"
+
+            else:
+                content = content +  '<h1>Jsonrpc AudioLibrary.GetSongs data not available via json:</h1>' + divider + "\n"
+                content = content + command + "\n"
+                
+                content_txt = content_txt + 'Jsonrpc AudioLibrary.GetSongs data not available via json:' + divider_txt + "\n"
+                content_txt = content_txt + command + "\n"
 
             
             content = content + '</body></html>' + "\n"
