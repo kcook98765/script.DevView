@@ -184,64 +184,51 @@ class report():
         
         content_txt = 'DevView' + "\n";
 
-        content = content + '<img src="/screenshot.png" width="400">' + "\n";
+        content = content + '<table border=1><tr><td><img src="/screenshot.png" width="400"></td>' + "\n";
 
     
     
-        content = content + '<h1>windowID : ' + str(windowID) + ' / ' + 'Container : ' + str(container) + '</h1>' + "\n"
+        
         
         content_txt = content_txt + 'windowID: ' + str(windowID) + ' / ' + 'Container : ' + str(container) + "\n"
 
 
         content_txt = content_txt + 'Matrix availability : ' + "\n"
-        content_txt = content_txt + '    [COLOR red]M[/COLOR] = Unavailable ' + "\n"
+        content_txt = content_txt + '    [COLOR green]M[/COLOR] = New for Matrix ' + "\n"
         content_txt = content_txt + '    M = Available ' + "\n"
         content_txt = content_txt + '    [COLOR yellow]M[/COLOR] = Deprecated ' + "\n"
-        content_txt = content_txt + '    [COLOR green]M[/COLOR] = New for Matrix ' + "\n"
+        content_txt = content_txt + '    [COLOR red]M[/COLOR] = Unavailable ' + "\n"
 
         content_txt = content_txt + 'Nexus availability : ' + "\n"
-        content_txt = content_txt + '    [COLOR red]N[/COLOR] = Unavailable ' + "\n"
+        content_txt = content_txt + '    [COLOR green]N[/COLOR] = New for Nexus ' + "\n"
         content_txt = content_txt + '    N = Available ' + "\n"
         content_txt = content_txt + '    [COLOR yellow]N[/COLOR] = Deprecated ' + "\n"
-        content_txt = content_txt + '    [COLOR green]N[/COLOR] = New for Nexus ' + "\n"
+        content_txt = content_txt + '    [COLOR red]N[/COLOR] = Unavailable ' + "\n"
+        
 
 
-        content = content + 'Matrix availability : <br>' + "\n"
-        content = content + '--- <font color=red>M</font> = Unavailable <br>' + "\n"
+        content = content + '<td>Matrix availability : <br>' + "\n"
+        content = content + '--- <font color=green>M</font> = New for Matrix <br>' + "\n"
         content = content + '--- M = Available <br>' + "\n"
         content = content + '--- <font color=yellow>M</font> = Deprecated <br>' + "\n"
-        content = content + '--- <font color=green>M</font> = New for Matrix <br>' + "\n"
+        content = content + '--- <font color=red>M</font> = Unavailable <br></td>' + "\n"
 
-        content = content + 'Nexus availability : <br>' + "\n"
-        content = content + '--- <font color=red>N</font> = Unavailable <br>' + "\n"
+        content = content + '<td>Nexus availability : <br>' + "\n"
+        content = content + '--- <font color=green>N</font> = New for Nexus <br>' + "\n"
         content = content + '--- N = Available <br>' + "\n"
         content = content + '--- <font color=yellow>N</font> = Deprecated <br>' + "\n"
-        content = content + '--- <font color=green>N</font> = New for Nexus <br>' + "\n"
+        content = content + '--- <font color=red>N</font> = Unavailable <br></td>' + "\n"
+        
 
-
-
-
-
-# additional header details.....
-# Window.Property(xmlfile)    Home.xml
-# Displays the name of the xml file currently shown
-
-# Window(AddonBrowser).Property(Updated)  11/08/2022 10:51:20 AM
-# Shows the date and time the addon repo was last checked for updates
-
-# System.Time    11:07 AM    Current time
-
-# System.StartupWindow    10000    The Window Kodi will load on startup
-
-# System.ScreenResolution    1918x1002 - Windowed    Screen resolution
-
-# System.ProfileName    Master user    Shows the User name of the currently logged in Kodi user
-
-# System.Date    Tuesday, November 8, 2022    Current date
-
-# System.CurrentControlID    1601    ID of the currently focused control.
-
-# ListItem.DBTYPE    movie
+        content = content + '<td>System.Date : <b>' + xbmc.getInfoLabel('System.Date') + '</b><br>'
+        content = content + 'System.BuildVersion : <b>' + xbmc.getInfoLabel('System.BuildVersion') + '</b><br>'
+        content = content + 'Window.Property(xmlfile) : <b>' + xbmc.getInfoLabel('Window.Property(xmlfile)') + '</b><br>'
+        
+        content = content + 'System.ScreenResolution : <b>' + xbmc.getInfoLabel('System.ScreenResolution') + '</b><br>'
+        content = content + 'ListItem.DBTYPE : <b>' + xbmc.getInfoLabel('ListItem.DBTYPE') + '</b><br>'
+        content = content + 'DBID : <b>' + xbmc.getInfoLabel('ListItem.DBID') + '</b><br>'
+        content = content + 'windowID : <b>' + str(windowID) + '</b><br>'
+        content = content + 'Container : <b>' + str(container) + '</b></td></tr></table>'
 
 
         json_fileandpath = ''
