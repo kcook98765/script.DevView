@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<addon id="script.DevView" name="DevView" version="0.1.2" provider-name="kcook98765">
+<addon id="script.DevView" name="DevView" version="0.2.1" provider-name="kcook98765">
 	<requires>
 		<import addon="xbmc.python" version="3.0.0"/>
 	</requires>
@@ -25,7 +25,9 @@
 			<icon>icon.png</icon>
 		</assets>
 		<news>
-V0.1.1 Fixfor Matrix systems
+V0.2.1 Add back in Music details, better json matching, tweak report display		
+		
+V0.1.1 Fix for Matrix systems
 
 V0.1.1 Refactor code, push lists of functions into a database, also add screenshot to reports
 
