@@ -13,3 +13,10 @@ CREATE TABLE IF NOT EXISTS listitem (
     notes TEXT,
     PRIMARY KEY(listitem)
 );
+CREATE TABLE IF NOT EXISTS results (
+    code_type TEXT,
+    base_code TEXT,
+    code_run TEXT,
+    results TEXT,
+    PRIMARY KEY(code_type,base_code,code_run)
+);

@@ -5,6 +5,7 @@ import xbmcvfs
 import csv
 import sqlite3
 import contextlib
+import urllib.parse
 from cProfile import label
 
 ADDON = xbmcaddon.Addon()
@@ -16,7 +17,7 @@ profilePath = xbmcvfs.translatePath( ADDON.getAddonInfo('profile') )
 if not os.path.exists(profilePath):
     os.makedirs(profilePath)
 
-DB_PATH = xbmcvfs.translatePath(os.path.join(profilePath, 'devview.db'))
+DB_PATH = xbmcvfs.translatePath(os.path.join(profilePath, 'devview3.db'))
 SQL_PATH = xbmcvfs.translatePath(os.path.join(ADDON_PATH, 'resources', 'lib', 'tables.sql'))
 DB_DATA_INFOTAG = xbmcvfs.translatePath(os.path.join(ADDON_PATH, 'resources', 'lib', 'infotag.csv'))
 DB_DATA_LISTITEM = xbmcvfs.translatePath(os.path.join(ADDON_PATH, 'resources', 'lib', 'listitem.csv'))
@@ -82,78 +83,94 @@ class report():
             connection.commit()    
 
 
+    
 
        
     
     def gather_data(self):
+        
+        def flatten(adict):
+            stack = [[adict, []]]
+            x=0
+            out = ''
+            while stack:
+                d, pre = stack.pop()
+                if isinstance(d, dict):
+                    for key, value in d.items():
+                        if isinstance(value, dict):
+                            stack.append([value, pre + [key]])
+                        elif isinstance(value, (list, tuple)):
+                            if isinstance(value, list):
+                                x=0
+                            for v in value:
+                                stack.append([v, pre + [key] + [x]])
+                                x=x+1
+                        else:
+                            out = out + str((pre + [key])) + "\t" + str(value) + "\n"
+                else:
+                    out = out + str((pre))+  "\t" + str(d) + "\n"
+            return out
+
+
+        def store_json_results(results,command):
+            lines = results.split('\n')
+            for line in lines:
+
+                if line != None and "\t" in line:
+
+#                    debug = 'store_json_results line: ' + str(line)
+#                    xbmc.log(debug, level=xbmc.LOGINFO)                
+    
+                    [path, result] = line.split('\t')
+                    code_path = re.sub(r", ", '][', path)
+    
+#                    debug = 'store_json_results after regex: ' + str(code_path) + ':' + result
+#                    xbmc.log(debug, level=xbmc.LOGINFO)                       
+                    
+    
+                    store_results('JsonRPC',command,code_path,result)
+            return ''
+
+        def jsonrpc_properties (param,field):
+            props = ''
+            command = '{ "jsonrpc": "2.0", "method": "JSONRPC.Introspect", "params": { "filter": { "id": "' + param + '", "type": "method" } }, "id": 1 }'
+            result = json.loads(xbmc.executeJSONRPC(command))
+            log_introspect = param + '_introspect'
+            json_call[log_introspect] = command
+            if 'items' in result['result']['types'][field]:
+                prop = result['result']['types'][field]['items']['enums']
+            else:
+                prop = result['result']['types'][field]['enums']
+            x = 0
+            for p in prop:
+                # empty param returned for at least Settings.GetSettings !
+                if p != '':
+                    if x > 0:
+                        props = props + ', '
+                    x = 1
+                    props = props + '"' + p + '"'
+#            store_results('JsonRPC',log_introspect,'introspect',props)
+            return props
 
         
-        def format_report_txt(label,result,notes,V19,V20):
-            if V19 == 'N':
-                x = '[COLOR green]M[/COLOR]'
-            elif V19 == 'A':
-                x = 'M'
-            elif V19 == 'D':
-                x = '[COLOR yellow]M[/COLOR]'
-            elif V19 == 'U':
-                x = '[COLOR red]M[/COLOR]'
-            else:
-                x = '[COLOR red]?[/COLOR]'
-    
-            if V20 == 'N':
-                x = x + '/' + '[COLOR green]N[/COLOR]'
-            elif V20 == 'A':
-                x = x + '/' + 'N'
-            elif V20 == 'D':
-                x = x + '/' + '[COLOR yellow]N[/COLOR]'
-            elif V20 == 'U':
-                x = x + '/' + '[COLOR red]N[/COLOR]'
-            else:
-                x = x + '/' + '[COLOR red]?[/COLOR]'
+        def store_results (code_type,base_code,code_run,results):
             
+            debug = 'store_results called with: ' + str(code_type) + ':' + str(base_code) + ':' + str(code_run) + ':' + str(results)
+            xbmc.log(debug, level=xbmc.LOGINFO)
+            
+            
+            
+            
+            with contextlib.closing(sqlite3.connect(DB_PATH)) as connection:
+                cursor = connection.cursor()
+                cursor.execute("""
+                        INSERT INTO results (code_type,base_code,code_run,results)
+                        VALUES (?, ?, ?, ?)
+                        """, [str(code_type),str(base_code),str(code_run),str(results)])
+        
+                connection.commit()
+            return ''
 
-            
-            x = x + ' :: ' + label+ ' :: '
-            
-            
-            x = x + str(result) +"\n[COLOR grey]" + str(notes) + "[/COLOR]\n" + '------------------------------------' + "\n"
-    
-            return x
-            
-    
-        def format_report_html(label,result,notes,V19,V20):
-            x = '<tr><td>'
-            if V19 == 'N':
-                x = x + '<font color=green>M</font>'
-            elif V19 == 'A':
-                x = x + 'M'
-            elif V19 == 'D':
-                x = x + '<font color=yellow>M</font>'
-            elif V19 == 'U':
-                x = x + '<font color=red>M</font>'
-            else:
-                x = x + '<font color=red>?</font>'
-    
-            if V20 == 'N':
-                x = x + '/' + '<font color=green>N</font>'
-            elif V20 == 'A':
-                x = x + '/' + 'N'
-            elif V20 == 'D':
-                x = x + '/' + '<font color=yellow>N</font>'
-            elif V20 == 'U':
-                x = x + '/' + '<font color=red>N</font>'
-            else:
-                x = x + '/' + '<font color=red>?</font>'        
-            
-            x = x + '</td><td>' + label + '</td><td>' + str(result) + '</td><td>' + str(notes) + '</td></tr>' + "\n"
-    
-            return x        
-        
-        
-        
-        
-        
-        
         if xbmc.getCondVisibility("Window.IsActive(busydialog)"):
             xbmc.executebuiltin("Dialog.Close(busydialog)")
             xbmc.sleep(800)
@@ -164,6 +181,12 @@ class report():
         xbmc.executebuiltin(action)
     
     
+        # clear out results table
+        with contextlib.closing(sqlite3.connect(DB_PATH)) as connection:
+            cursor = connection.cursor()
+            cursor.execute("DELETE FROM results")
+            connection.commit()
+    
     #    win = xbmcgui.Window(10000)
         windowID = xbmcgui.getCurrentWindowId()
         currwin = xbmcgui.Window(windowID)
@@ -173,90 +196,28 @@ class report():
         
         build_version = re.sub(r"\..*$", "", build_version)
             
-            
+
         
         
-        divider = '<hr>'
-        divider_txt = '-------------------------' + "\n";
-    
-        content = '<html><head><title>DevView</title></head>'
-        content = content + '<body>' + "\n"
+        videoInfoTag = sys.listitem.getVideoInfoTag()
+        musicinfo = sys.listitem.getMusicInfoTag()
+        has_pvr = xbmc.getInfoLabel('System.HasPVRAddon')
         
-        content_txt = 'DevView' + "\n";
-
-        content = content + '<table border=1><tr><td><img src="/screenshot.png" width="400"></td>' + "\n";
-
-    
-    
+        # seems this is not accurate for "season", but getMediaType does work ?
+        # dbtype = xbmc.getInfoLabel('ListItem.DBTYPE')
         
-        
-        content_txt = content_txt + 'windowID: ' + str(windowID) + ' / ' + 'Container : ' + str(container) + "\n"
+        dbtype = videoInfoTag.getMediaType()
 
-
-        content_txt = content_txt + 'Matrix availability : ' + "\n"
-        content_txt = content_txt + '    [COLOR green]M[/COLOR] = New for Matrix ' + "\n"
-        content_txt = content_txt + '    M = Available ' + "\n"
-        content_txt = content_txt + '    [COLOR yellow]M[/COLOR] = Deprecated ' + "\n"
-        content_txt = content_txt + '    [COLOR red]M[/COLOR] = Unavailable ' + "\n"
-
-        content_txt = content_txt + 'Nexus availability : ' + "\n"
-        content_txt = content_txt + '    [COLOR green]N[/COLOR] = New for Nexus ' + "\n"
-        content_txt = content_txt + '    N = Available ' + "\n"
-        content_txt = content_txt + '    [COLOR yellow]N[/COLOR] = Deprecated ' + "\n"
-        content_txt = content_txt + '    [COLOR red]N[/COLOR] = Unavailable ' + "\n"
-        
-
-
-        content = content + '<td>Matrix availability : <br>' + "\n"
-        content = content + '--- <font color=green>M</font> = New for Matrix <br>' + "\n"
-        content = content + '--- M = Available <br>' + "\n"
-        content = content + '--- <font color=yellow>M</font> = Deprecated <br>' + "\n"
-        content = content + '--- <font color=red>M</font> = Unavailable <br></td>' + "\n"
-
-        content = content + '<td>Nexus availability : <br>' + "\n"
-        content = content + '--- <font color=green>N</font> = New for Nexus <br>' + "\n"
-        content = content + '--- N = Available <br>' + "\n"
-        content = content + '--- <font color=yellow>N</font> = Deprecated <br>' + "\n"
-        content = content + '--- <font color=red>N</font> = Unavailable <br></td>' + "\n"
-        
-
-        content = content + '<td>System.Date : <b>' + xbmc.getInfoLabel('System.Date') + '</b><br>'
-        content = content + 'System.BuildVersion : <b>' + xbmc.getInfoLabel('System.BuildVersion') + '</b><br>'
-        content = content + 'Window.Property(xmlfile) : <b>' + xbmc.getInfoLabel('Window.Property(xmlfile)') + '</b><br>'
-        
-        content = content + 'System.ScreenResolution : <b>' + xbmc.getInfoLabel('System.ScreenResolution') + '</b><br>'
-        content = content + 'ListItem.DBTYPE : <b>' + xbmc.getInfoLabel('ListItem.DBTYPE') + '</b><br>'
-        content = content + 'DBID : <b>' + xbmc.getInfoLabel('ListItem.DBID') + '</b><br>'
-        content = content + 'windowID : <b>' + str(windowID) + '</b><br>'
-        content = content + 'Container : <b>' + str(container) + '</b></td></tr></table>'
-
-
-        json_fileandpath = ''
-        json_path = ''
-
-
-        dbtype = xbmc.getInfoLabel('ListItem.DBTYPE')
-
-# videos (video, movie, set, tvshow, season, episode, musicvideo) or for audio (music, song, album, artist).
+        # videos (video, movie, set, tvshow, season, episode, musicvideo) or for audio (music, song, album, artist).
         
         if dbtype == 'video' or dbtype == 'movie' or dbtype == 'set' or dbtype == 'tvshow' or dbtype == 'season' or dbtype == 'episode' or dbtype == 'musicvideo':
     
-            content = content + divider + '<table border=1><tr><td colspan=4><h1>sys.listitem.getVideoInfoTag() :</h1></td></tr>'  + "\n"
-            
-            
-            content = content + '<tr><td>Version</td><td>Function Call</td><td>Result</td><td>Notes</td></tr>' + "\n"
-            
-            content_txt = content_txt + divider_txt + 'sys.listitem.getVideoInfoTag() :' + "\n"
+
         
-            videoInfoTag = sys.listitem.getVideoInfoTag()
+            
 
             # See what "get" options are available
             whatup = dir(videoInfoTag)
-            
-            
-            json_fileandpath = videoInfoTag.getFilenameAndPath()
-            json_path = videoInfoTag.getPath()
-            
 
             # open DB, select all appropriate entries for this dbtype
             query = "SELECT function_name,data_type,keys,return_type,notes,V19,V20 FROM infotag WHERE data_type = 'video' ORDER BY function_name"
@@ -266,9 +227,8 @@ class report():
                 db_data = cursor.fetchall()
                 
             except:
-                content= content + '<tr><td>DB Connection/sql error</td><td></td></tr>' + "\n" 
-                content_txt = content_txt + 'DB Connection/sql error'  + "\n" 
-            
+                store_results('Internal','DB connect','DB connect','DB Connection/sql error')
+           
             else:   
                 
                 for stuff in db_data:
@@ -283,15 +243,13 @@ class report():
                     
                     if build_version == '20':
                         if q_v20 == 'U':
-                            content_txt = content_txt + format_report_txt(q_function_name,'[COLOR RED]N/A[/COLOR]',q_notes,q_v19,q_v20)
-                            content = content + format_report_html(q_function_name,'<font color=red>N/A</font>',q_notes,q_v19,q_v20)
+                            store_results('getVideoInfoTag()',q_function_name,q_function_name,'Unavailable on Nexus')
                         else:
                             if cq_function_name in whatup:
                                 try:
                                     f = getattr(videoInfoTag, cq_function_name)
                                 except:
-                                    content= content + '<tr><td>gettattr failure</td><td>' + cq_function_name + '</td></tr>' + "\n" 
-                                    content_txt = content_txt + 'gettattr failure :' + cq_function_name + "\n" 
+                                   store_results('getVideoInfoTag()',cq_function_name,cq_function_name,'gettattr failure')
                                 else:
                                     if q_keys != '':
                                         keys = q_keys.split()
@@ -299,37 +257,30 @@ class report():
                                             try:
                                                 this_thing = f(thing)
                                             except:
-                                                content= content + '<tr><td>function failure</td><td>' + thing + '</td></tr>' + "\n" 
-                                                content_txt = content_txt + 'function failure :' + thing + "\n" 
+                                                store_results('getVideoInfoTag()',q_function_name,thing,'Function Failure')
                                             else:
                                                 lbl = cq_function_name + "('" + thing + "')"
-                                                content_txt = content_txt + format_report_txt(lbl,this_thing,q_notes,q_v19,q_v20)
-                                                content = content + format_report_html(lbl,this_thing,q_notes,q_v19,q_v20)
+                                                store_results('getVideoInfoTag()',q_function_name,lbl,this_thing)
                                     else:
                                         try:
                                             this_thing = f()
                                         except:
-                                            content= content + '<tr><td>function failure</td><td>' + thing + '</td></tr>' + "\n" 
-                                            content_txt = content_txt + 'function failure :' + thing + "\n" 
+                                            store_results('getVideoInfoTag()',q_function_name,this_thing,'function failure')
                                         else:
-                                            content_txt = content_txt + format_report_txt(q_function_name,this_thing,q_notes,q_v19,q_v20)
-                                            content = content + format_report_html(q_function_name,this_thing,q_notes,q_v19,q_v20)
+                                            store_results('getVideoInfoTag()',q_function_name,q_function_name,this_thing)
                             
                             else:
-                                content_txt = content_txt + format_report_txt(cq_function_name,'[COLOR RED]dir(getVideoInfoTag) not found![/COLOR]',q_notes,q_v19,q_v20)
-                                content = content + format_report_html(cq_function_name,'<font color=red>dir(getVideoInfoTag) not found!</font>',q_notes,q_v19,q_v20)
+                                store_results('getVideoInfoTag()',q_function_name,q_function_name,'not found in dir(getVideoInfoTag)')
 
                     else:
                         if q_v19 == 'U':
-                            content_txt = content_txt + format_report_txt(q_function_name,'[COLOR RED]N/A[/COLOR]',q_notes,q_v19,q_v20)
-                            content = content + format_report_html(q_function_name,'<font color=red>N/A</font>',q_notes,q_v19,q_v20)
+                            store_results('getVideoInfoTag()',q_function_name,q_function_name,'Unavailable on Matrix')
                         else:
                             if cq_function_name in whatup:
                                 try:
                                     f = getattr(videoInfoTag, cq_function_name)
                                 except:
-                                    content= content + '<tr><td>gettattr failure</td><td>' + cq_function_name + '</td></tr>' + "\n" 
-                                    content_txt = content_txt + 'gettattr failure :' + cq_function_name + "\n" 
+                                    store_results('getVideoInfoTag()',cq_function_name,cq_function_name,'gettattr failure')
                                 else:
 
                                     if q_keys != '':
@@ -338,55 +289,26 @@ class report():
                                             try:
                                                 this_thing = f(thing)
                                             except:
-                                                content= content + '<tr><td>function failure</td><td>' + thing + '</td></tr>' + "\n" 
-                                                content_txt = content_txt + 'function failure :' + thing + "\n" 
+                                                store_results('getVideoInfoTag()',cq_function_name,this_thing,'function failure')
                                             else:
                                                 lbl = cq_function_name + "('" + thing + "')"
-                                                content_txt = content_txt + format_report_txt(lbl,this_thing,q_notes,q_v19,q_v20)
-                                                content = content + format_report_html(lbl,this_thing,q_notes,q_v19,q_v20)
-
+                                                store_results('getVideoInfoTag()',cq_function_name,lbl,thing)
                                     else:
                                         try:
                                             this_thing = f()
                                         except:
-                                            content= content + '<tr><td>function failure</td><td>' + thing + '</td></tr>' + "\n" 
-                                            content_txt = content_txt + 'function failure :' + thing + "\n" 
+                                            store_results('getVideoInfoTag()',cq_function_name,cq_function_name,'function failure')
                                         else:
-                                            content_txt = content_txt + format_report_txt(q_function_name,this_thing,q_notes,q_v19,q_v20)
-                                            content = content + format_report_html(q_function_name,this_thing,q_notes,q_v19,q_v20)
-                                              
-                                        
+                                            store_results('getVideoInfoTag()',q_function_name,q_function_name,this_thing)
                             else:
-                                content_txt = content_txt + format_report_txt(q_function_name,'[COLOR RED]dir(getVideoInfoTag) not found![/COLOR]',q_notes,q_v19,q_v20)
-                                content = content + format_report_html(q_function_name,'<font color=red>dir(getVideoInfoTag) not found!</font>',q_notes,q_v19,q_v20)
-                                
-            content = content + '</table>'          
-         
-         
-         
-         
-        else:
-            
-
-#            whatup = dir(musicinfo)
-#            content= content + "<tr><td>test dir : </td><td>" + str(whatup) + '</td></tr>' + "\n" 
-#            content_txt = content_txt + 'test dir :' + str(whatup) + "\n"
-            content = content + divider + '<table border=1><tr><td colspan=4><h1>sys.listitem.getMusicInfoTag() :</h1></td></tr>'  + "\n"
-            
-            
-            content = content + '<tr><td>Version</td><td>Function Call</td><td>Result</td><td>Notes</td></tr>' + "\n"
-            
-            content_txt = content_txt + divider_txt + 'sys.listitem.getMusicInfoTag() :' + "\n"
+                                store_results('getVideoInfoTag()',q_function_name,q_function_name,'not found in dir(getVideoInfoTag)')
         
-            musicinfo = sys.listitem.getMusicInfoTag()
+        elif dbtype == 'music' or dbtype == 'song' or dbtype == 'album' or dbtype == 'artist':
+        
+            
 
             # See what "get" options are available
             whatup = dir(musicinfo)
-            
-            
-            json_fileandpath = musicinfo.getURL()
-            
-            
 
             # open DB, select all appropriate entries for this dbtype
             query = "SELECT function_name,data_type,keys,return_type,notes,V19,V20 FROM infotag WHERE data_type = 'music' ORDER BY function_name"
@@ -394,13 +316,9 @@ class report():
                 cursor = self.DB.cursor()
                 cursor.execute(query)
                 db_data = cursor.fetchall()
-                
             except:
-                content= content + '<tr><td>DB Connection/sql error</td><td></td></tr>' + "\n" 
-                content_txt = content_txt + 'DB Connection/sql error'  + "\n" 
-            
+                store_results('getMusicInfoTag()','DB connect','DB connect','DB Connection/sql error')
             else:   
-                
                 for stuff in db_data:
                     q_function_name = stuff[0]
                     cq_function_name = re.sub(r"\(\)$", '', q_function_name)
@@ -413,15 +331,13 @@ class report():
                     
                     if build_version == '20':
                         if q_v20 == 'U':
-                            content_txt = content_txt + format_report_txt(q_function_name,'[COLOR RED]N/A[/COLOR]',q_notes,q_v19,q_v20)
-                            content = content + format_report_html(q_function_name,'<font color=red>N/A</font>',q_notes,q_v19,q_v20)
+                             store_results('getMusicInfoTag()',q_function_name,q_function_name,'Unavailable for Nexus')
                         else:
                             if cq_function_name in whatup:
                                 try:
                                     f = getattr(musicinfo, cq_function_name)
                                 except:
-                                    content= content + '<tr><td>gettattr failure</td><td>' + cq_function_name + '</td></tr>' + "\n" 
-                                    content_txt = content_txt + 'gettattr failure :' + cq_function_name + "\n" 
+                                    store_results('getMusicInfoTag()',cq_function_name,cq_function_name,'gettattr failure')
                                 else:
                                     if q_keys != '':
                                         keys = q_keys.split()
@@ -429,83 +345,51 @@ class report():
                                             try:
                                                 this_thing = f(thing)
                                             except:
-                                                content= content + '<tr><td>function failure</td><td>' + thing + '</td></tr>' + "\n" 
-                                                content_txt = content_txt + 'function failure :' + thing + "\n" 
+                                                store_results('getMusicInfoTag()',cq_function_name,thing,'function failure')
                                             else:
-                                                lbl = cq_function_name + "('" + thing + "')"
-                                                content_txt = content_txt + format_report_txt(lbl,this_thing,q_notes,q_v19,q_v20)
-                                                content = content + format_report_html(lbl,this_thing,q_notes,q_v19,q_v20)
+                                                store_results('getMusicInfoTag()',cq_function_name,lbl,this_thing)
                                     else:
                                         try:
                                             this_thing = f()
                                         except:
-                                            content= content + '<tr><td>function failure</td><td>' + thing + '</td></tr>' + "\n" 
-                                            content_txt = content_txt + 'function failure :' + thing + "\n" 
+                                            store_results('getMusicInfoTag()',q_function_name,thing,'function failure')
                                         else:
-                                            content_txt = content_txt + format_report_txt(q_function_name,this_thing,q_notes,q_v19,q_v20)
-                                            content = content + format_report_html(q_function_name,this_thing,q_notes,q_v19,q_v20)
-                            
+                                            store_results('getMusicInfoTag()',q_function_name,q_function_name,this_thing)
                             else:
-                                content_txt = content_txt + format_report_txt(cq_function_name,'[COLOR RED]dir(getVideoInfoTag) not found![/COLOR]',q_notes,q_v19,q_v20)
-                                content = content + format_report_html(cq_function_name,'<font color=red>dir(getVideoInfoTag) not found!</font>',q_notes,q_v19,q_v20)
-
+                                store_results('getMusicInfoTag()',cq_function_name,cq_function_name,'dir(getVideoInfoTag) not found')
                     else:
                         if q_v19 == 'U':
-                            content_txt = content_txt + format_report_txt(q_function_name,'[COLOR RED]N/A[/COLOR]',q_notes,q_v19,q_v20)
-                            content = content + format_report_html(q_function_name,'<font color=red>N/A</font>',q_notes,q_v19,q_v20)
+                            store_results('getMusicInfoTag()',q_function_name,q_function_name,'Unavailable in Matrix')
                         else:
                             if cq_function_name in whatup:
                                 try:
                                     f = getattr(musicinfo, cq_function_name)
                                 except:
-                                    content= content + '<tr><td>gettattr failure</td><td>' + cq_function_name + '</td></tr>' + "\n" 
-                                    content_txt = content_txt + 'gettattr failure :' + cq_function_name + "\n" 
+                                    store_results('getMusicInfoTag()',cq_function_name,cq_function_name,'gettattr failure')
                                 else:
-
                                     if q_keys != '':
                                         keys = q_keys.split()
                                         for thing in keys:
                                             try:
                                                 this_thing = f(thing)
                                             except:
-                                                content= content + '<tr><td>function failure</td><td>' + thing + '</td></tr>' + "\n" 
-                                                content_txt = content_txt + 'function failure :' + thing + "\n" 
+                                                store_results('getMusicInfoTag()',cq_function_name,thing,'function failure')
                                             else:
                                                 lbl = cq_function_name + "('" + thing + "')"
-                                                content_txt = content_txt + format_report_txt(lbl,this_thing,q_notes,q_v19,q_v20)
-                                                content = content + format_report_html(lbl,this_thing,q_notes,q_v19,q_v20)
-
+                                                store_results('getMusicInfoTag()',cq_function_name,lbl,this_thing)
                                     else:
                                         try:
                                             this_thing = f()
                                         except:
-                                            content= content + '<tr><td>function failure</td><td>' + thing + '</td></tr>' + "\n" 
-                                            content_txt = content_txt + 'function failure :' + thing + "\n" 
+                                            store_results('getMusicInfoTag()',cq_function_name,cq_function_name,'function failure')
                                         else:
-                                            content_txt = content_txt + format_report_txt(q_function_name,this_thing,q_notes,q_v19,q_v20)
-                                            content = content + format_report_html(q_function_name,this_thing,q_notes,q_v19,q_v20)
-                                              
-                                        
+                                            store_results('getMusicInfoTag()',q_function_name,q_function_name,this_thing)
                             else:
-                                content_txt = content_txt + format_report_txt(q_function_name,'[COLOR RED]dir(getMusicInfoTag) not found![/COLOR]',q_notes,q_v19,q_v20)
-                                content = content + format_report_html(q_function_name,'<font color=red>dir(getMusicInfoTag) not found!</font>',q_notes,q_v19,q_v20)
+                                store_results('getMusicInfoTag()',q_function_name,q_function_name,'dir(getMusicInfoTag) not found')
                                 
-            content = content + '</table>'             
-                             
-                         
 
-            
         # now do listitems
-        
-        
-        content = content + divider + '<table border=1><tr><td colspan=3><h1>xbmc.getInfoLabel :</h1></td></tr>'  + "\n"
 
-        content = content + '<tr><td>Function</td><td>Results</td><td>Notes</td></tr>' + "\n"
-            
-        content_txt = content_txt + divider_txt + 'xbmc.getInfoLabel :' + "\n"
-        
-        
-        
         # open DB, select all listitems
         query = "SELECT listitem,notes FROM listitem WHERE 1 ORDER BY listitem"
         try:
@@ -514,11 +398,8 @@ class report():
             db_data = cursor.fetchall()
             
         except:
-            content= content + '<tr><td>DB Connection/sql error</td><td></td><td></td></tr>' + "\n" 
-            content_txt = content_txt + 'DB Connection/sql error'  + "\n" 
-        
+            store_results('xbmc.getInfoLabel','DB CONNECT','DB CONNECT','DB Connection/sql error')
         else:   
-
             this_lookup = 'Container(id).Position'
             this_lookup = re.sub(r"Container\(id\)", "Container(" + container + ")", this_lookup)
             
@@ -562,196 +443,387 @@ class report():
                     xbmcresult_txt = ''
                 
                 if xbmcresult != '':
-                    x = re.search("^http", xbmcresult)
-                    if x and key != 'ListItem.Path' and key != 'ListItem.FileNameAndPath':
-                        xbmcresult = xbmcresult + '<img src="' + xbmcresult + '" height=200>'     
-                    
-                    content = content + '<tr><td>' + key + '</td><td>' + xbmcresult + '</td>' + '<td>' + q_notes + '</td></tr>' + "\n"
-                    content_txt = content_txt + key + ' : ' + xbmcresult_txt + ' : ' + "\n[COLOR grey]" + q_notes + "[/COLOR]\n"
-    
+                    store_results('xbmc.getInfoLabel',key,key,xbmcresult_txt)
         
-            content = content + '</table>'
-            content_txt = content_txt + divider_txt
-        
-            if json_fileandpath is None or json_fileandpath == '':
-                json_fileandpath = xbmc.getInfoLabel('ListItem.FileNameAndPath')
-
-            if json_path is None or json_path == '':
-                json_path = xbmc.getInfoLabel('ListItem.Path')
+        json_call = {}
+        video_dbid = videoInfoTag.getDbId()
+        audio_dbid = musicinfo.getDbId()
 
 
-        filter = ''
+        if video_dbid > 0 and (dbtype == 'video' or dbtype == 'movie'):
+            prop_name = 'VideoLibrary.GetMovieDetails'
+            props = jsonrpc_properties(prop_name,'Video.Fields.Movie')
+            command = '{"jsonrpc": "2.0", "method": "%s", "params": { "movieid" : %s, ' \
+                    '"properties": [%s] }, "id": 1}' % (prop_name, video_dbid, props)
+            json_call[prop_name] = command
+            result = json.loads(xbmc.executeJSONRPC(command))
+            data = flatten(result)
+            store_json_results(data,prop_name)            
 
-        if json_fileandpath is not None and json_fileandpath != '':
+        if video_dbid > 0 and dbtype == 'set':
+            prop_name = 'VideoLibrary.GetMovieSetDetails'
+            props = jsonrpc_properties(prop_name,'Video.Fields.Movie')
+            command = '{"jsonrpc": "2.0", "method": "%s", "params": { "setid" : %s, ' \
+                    '"properties": [%s] }, "id": 1}' % (prop_name, video_dbid, props)
+            json_call[prop_name] = command
+            result = json.loads(xbmc.executeJSONRPC(command))
+            data = flatten(result)
+            store_json_results(data,prop_name)       
+
+
+        if video_dbid > 0 and dbtype == 'tvshow':
+            prop_name = 'VideoLibrary.GetTVShowDetails'
+            props = jsonrpc_properties(prop_name,'Video.Fields.TVShow')
+            command = '{"jsonrpc": "2.0", "method": "%s", "params": { "tvshowid": %s, ' \
+                    '"properties": [%s] }, "id": 1}' % (prop_name, video_dbid, props)
+
+            json_call[prop_name] = command
+            result = json.loads(xbmc.executeJSONRPC(command))
+            data = flatten(result)
+            store_json_results(data,prop_name)
+
+        if video_dbid > 0 and dbtype == 'season':
+            prop_name = 'VideoLibrary.GetSeasonDetails'
+            props = jsonrpc_properties(prop_name,'Video.Fields.Season')
+            command = '{"jsonrpc": "2.0", "method": "%s", "params": { "seasonid": %s, ' \
+                    '"properties": [%s] }, "id": 1}' % (prop_name, video_dbid, props)
+
+            json_call[prop_name] = command
+            result = json.loads(xbmc.executeJSONRPC(command))
+            data = flatten(result)
+            store_json_results(data,prop_name)
+
+
+        if video_dbid > 0 and dbtype == 'episode':
+            prop_name = 'VideoLibrary.GetEpisodeDetails'
+            props = jsonrpc_properties(prop_name,'Video.Fields.Episode')
+            command = '{"jsonrpc": "2.0", "method": "%s", "params": { "episodeid": %s, ' \
+                    '"properties": [%s] }, "id": 1}' % (prop_name, video_dbid, props)
+
+            json_call[prop_name] = command
+            result = json.loads(xbmc.executeJSONRPC(command))
+            data = flatten(result)
+            store_json_results(data,prop_name)
+
+
+        if video_dbid > 0 and dbtype == 'musicvideo':
+            prop_name = 'VideoLibrary.GetMusicVideoDetails'
+            props = jsonrpc_properties(prop_name,'Video.Fields.MusicVideo')
+            command = '{"jsonrpc": "2.0", "method": "%s", "params": { "musicvideoid": %s, ' \
+                    '"properties": [%s] }, "id": 1}' % (prop_name, video_dbid, props)
+
+            json_call[prop_name] = command
+            result = json.loads(xbmc.executeJSONRPC(command))
+            data = flatten(result)
+            store_json_results(data,prop_name)
+
+
+        if audio_dbid > 0 and dbtype == 'artist':
+            prop_name = 'AudioLibrary.GetArtistDetails'
+            props = jsonrpc_properties(prop_name,'Audio.Fields.Artist')
             
-            if json_path is not None and json_path != '':
-                
-                json_file = re.sub(r"^{}".format(json_path), '', json_fileandpath)
-                
-                filter = '{"or" : [ { "and" : [{"field": "filename", "operator": "is", "value": "%s"},' % json_file
-                filter = filter + '{"field": "path", "operator": "is", "value": "%s"}]},'  % json_path
-                filter = filter + '{"field": "filename", "operator": "is", "value": "%s"}]}' % json_fileandpath
-            else:
-                filter = '{"field": "filename", "operator": "is", "value": "%s"}' % json_fileandpath
-
-
-        
-        
-        
-        
-        
+            command = '{"jsonrpc": "2.0", "method": "%s", "params": { "filter": { "artistid" : %s }, ' \
+                    '"properties": [%s] }, "id": 1}' % (prop_name, audio_dbid, props)
     
-        if not filter or filter == "-1":
-            file = "ListItem.FileNameAndPath not found"
-            content = content + 'ListItem.FileNameAndPath not found, unable to display additional data.'
-            content_txt = content_txt + 'ListItem.FileNameAndPath not found, unable to display additional data.'
+            json_call[prop_name] = command
+            result = json.loads(xbmc.executeJSONRPC(command))
+            data = flatten(result)
+            store_json_results(data,prop_name)
+
+
+
+        if audio_dbid > 0 and dbtype == 'album':
+            prop_name = 'AudioLibrary.GetAlbumDetails'
+            props = jsonrpc_properties(prop_name,'Audio.Fields.Album')
+            
+            command = '{"jsonrpc": "2.0", "method": "%s", "params": { "filter": { "albumid" : %s }, ' \
+                    '"properties": [%s] }, "id": 1}' % (prop_name, audio_dbid, props)
+    
+            json_call[prop_name] = command
+            result = json.loads(xbmc.executeJSONRPC(command))
+            data = flatten(result)
+            store_json_results(data,prop_name)
+
+
+        if audio_dbid > 0 and dbtype == 'song':
+            prop_name = 'AudioLibrary.GetSongDetails'
+            props = jsonrpc_properties(prop_name,'Audio.Fields.Song')
+            
+            command = '{"jsonrpc": "2.0", "method": "%s", "params": { "songid" : %s , ' \
+                    '"properties": [%s] }, "id": 1}' % (prop_name, audio_dbid, props)
+    
+            json_call[prop_name] = command
+            result = json.loads(xbmc.executeJSONRPC(command))
+            data = flatten(result)
+            store_json_results(data,prop_name)
+
+        
+        if has_pvr:
+            prop_name = 'PVR.GetProperties'
+            props = jsonrpc_properties(prop_name,'PVR.Property.Name')
+            command = '{"jsonrpc": "2.0", "method": "%s", "params": { "properties": [%s] }, "id": 1}' % (prop_name, props)
+            json_call[prop_name] = command
+            result = json.loads(xbmc.executeJSONRPC(command))
+            data = flatten(result)
+            store_json_results(data,prop_name)
+
+
+
+
+        if 1 == 2:
+            
+            # need broadcastid and playerid below to trigger
+            prop_name = 'PVR.GetBroadcastDetails'
+            props = jsonrpc_properties(prop_name,'PVR.Fields.Broadcast')
+            command = '{"jsonrpc": "2.0", "method": "%s", "params": { "broadcastid" : %s "properties": [%s] }, "id": 1}' % (prop_name, broadcastid, props)
+            json_call[prop_name] = command
+            result = json.loads(xbmc.executeJSONRPC(command))
+            data = flatten(result)
+            store_json_results(data,prop_name)
+    
+            prop_name = 'Player.GetItem'
+            props = jsonrpc_properties(prop_name,'List.Fields.All')
+            command = '{"jsonrpc": "2.0", "method": "%s", "params": { "playerid" : %s, "properties": [%s] }, "id": 1}' % (prop_name, playerid, props)
+            json_call[prop_name] = command
+            result = json.loads(xbmc.executeJSONRPC(command))
+            data = flatten(result)
+            store_json_results(data,prop_name)
+
+        # these can run every time
+
+
+
+        prop_name = 'Application.GetProperties'
+        props = jsonrpc_properties(prop_name,'Application.Property.Name')
+        command = '{"jsonrpc": "2.0", "method": "%s", "params": { "properties": [%s] }, "id": 1}' % (prop_name, props)
+        json_call[prop_name] = command
+        result = json.loads(xbmc.executeJSONRPC(command))
+        data = flatten(result)
+        store_json_results(data,prop_name)
+
+        prop_name = 'System.GetProperties'
+        props = jsonrpc_properties(prop_name,'System.Property.Name')
+        command = '{"jsonrpc": "2.0", "method": "%s", "params": { "properties": [%s] }, "id": 1}' % (prop_name, props)
+        json_call[prop_name] = command
+        result = json.loads(xbmc.executeJSONRPC(command))
+        data = flatten(result)
+        store_json_results(data,prop_name)
+
+            # 5.1.3 Addons.GetAddons
+            # http://127.0.0.1:8080/jsonrpc?request={%20%22jsonrpc%22:%20%222.0%22,%20%22method%22:%20%22JSONRPC.Introspect%22,%20%22params%22:%20{%20%22filter%22:%20{%20%22id%22:%20%22Addons.GetAddons%22,%20%22type%22:%20%22method%22%20}%20},%20%22id%22:%201%20}
+# this one takes a while, commented out for now, maybe add setting to enable/disable this lookup?
+#            prop_name = 'Addons.GetAddons'
+#            props = jsonrpc_properties(prop_name,'Addon.Fields')
+#            command = '{"jsonrpc": "2.0", "method": "%s", "params": { "properties": [%s] }, "id": 1}' % (prop_name, props)
+#            json_call[prop_name] = command
+#            result = json.loads(xbmc.executeJSONRPC(command))
+#            data = flatten(result)
+#            store_json_results(data,prop_name)
+
+            # http://127.0.0.1:8080/jsonrpc?request={%20%22jsonrpc%22:%20%222.0%22,%20%22method%22:%20%22JSONRPC.Introspect%22,%20%22params%22:%20{%20%22filter%22:%20{%20%22id%22:%20%22Settings.GetSettings%22,%20%22type%22:%20%22method%22%20}%20},%20%22id%22:%201%20}
+# takes a while, maybe use setting to enable/disable
+#            prop_name = 'Settings.GetSettings'
+#            command = '{"jsonrpc": "2.0", "method": "%s", "params": { }, "id": 1}' % (prop_name)
+#            json_call[prop_name] = command
+#            result = json.loads(xbmc.executeJSONRPC(command))
+#            data = flatten(result)
+#            store_json_results(data,prop_name)
+
+
+
+#        if dbtype == 'music' or dbtype == 'song' or dbtype == 'album' or dbtype == 'artist':
+#        if dbtype == 'video' or dbtype == 'movie' or dbtype == 'set' or dbtype == 'tvshow' or dbtype == 'season' or dbtype == 'episode' or dbtype == 'musicvideo':
+            
+
+
+
+
+
+
+
+
+        ######################################
+        # now that all data has been saved to database, can build the reports here
+    
+        content = '<html><head><title>DevView</title></head>'
+        content = content + '<body>' + "\n"
+        content = content + '<table border=1><tr><td><img src="screenshot.png" width="400"></td>' + "\n";     
+        content = content + '<td>System.Date : <b>' + xbmc.getInfoLabel('System.Date') + '</b><br>'
+        content = content + 'System.Time : <b>' + xbmc.getInfoLabel('System.Time') + '</b><br>'
+        content = content + 'System.BuildVersion : <b>' + xbmc.getInfoLabel('System.BuildVersion') + '</b><br>'
+        content = content + 'Window.Property(xmlfile) : <b>' + xbmc.getInfoLabel('Window.Property(xmlfile)') + '</b><br>'
+        content = content + 'System.ScreenResolution : <b>' + xbmc.getInfoLabel('System.ScreenResolution') + '</b><br>'
+        content = content + 'ListItem.DBTYPE : <b>' + xbmc.getInfoLabel('ListItem.DBTYPE') + '</b><br>'
+        content = content + 'DBID : <b>' + xbmc.getInfoLabel('ListItem.DBID') + '</b><br>'
+        content = content + 'windowID : <b>' + str(windowID) + '</b><br>'
+        content = content + 'Container : <b>' + str(container) + '</b></td></tr></table>'
+    
+        # see if there is any getVideoInfoTag() data and output it
+
+        # videos (video, movie, set, tvshow, season, episode, musicvideo) or for audio (music, song, album, artist).
+        
+        if dbtype == 'video' or dbtype == 'movie' or dbtype == 'set' or dbtype == 'tvshow' or dbtype == 'season' or dbtype == 'episode' or dbtype == 'musicvideo':
+            query = """SELECT B.V19,B.V20,A.base_code,B.keys,A.code_run,A.results,B.data_type,B.return_type,B.notes
+            FROM results AS A LEFT JOIN infotag AS B ON B.function_name = A.base_code
+            WHERE A.code_type = 'getVideoInfoTag()' AND B.data_type = 'video' ORDER BY A.base_code,A.code_run"""
+            h_label = 'getVideoInfoTag()'
         else:
-    
-            command = '{"jsonrpc": "2.0", ' \
-                    '"method": "VideoLibrary.GetMovies", ' \
-                    '"params": { ' \
-                    '"filter": %s, ' \
-                    '"sort": { "order": "ascending", "method": "label" }, ' \
-                    '"properties": ["dateadded", "file", "lastplayed", "plot", "title", "art", "playcount", ' \
-                    '"streamdetails", "director", "resume", "runtime", "plotoutline", "sorttitle", ' \
-                    '"cast", "votes", "showlink", "top250", "trailer", "year", "country", ' \
-                    '"studio", "set", "genre", "mpaa", "setid", "rating", "tag", "tagline", ' \
-                    '"writer", "originaltitle", "imdbnumber", "uniqueid"] ' \
-                    '}, "id": 1}' % filter            
-    
-    #    debug = 'DevView DEBUG json call: ' + str(command)
-    #    xbmc.log(debug, level=xbmc.LOGINFO)
-    
-    
-            result = json.loads(xbmc.executeJSONRPC(command))
-
-#           content = content + command + "\n"
-#           content_txt = content_txt + command + "\n"
-
+            query = """SELECT B.V19,B.V20,A.base_code,B.keys,A.code_run,A.results,B.data_type,B.return_type,B.notes
+            FROM results AS A LEFT JOIN infotag AS B ON B.function_name = A.base_code
+            WHERE A.code_type = 'getMusicInfoTag()' AND B.data_type = 'music' ORDER BY A.base_code,A.code_run"""
+            h_label = 'getMusicInfoTag()'
             
-            matches = result['result']['limits']['total']
+        try:
+            cursor = self.DB.cursor()
+            cursor.execute(query)
+            db_data = cursor.fetchall()
             
-            if matches > 0:
-                content = content +  '<h1>Jsonrpc VideoLibrary.GetMovies data available:</h1>' + divider + "\n"
-                content = content + command + "\n"
-                content = content + "<pre>\n"
-                content = content + json.dumps(result, indent=2)
-                content = content +  "</pre>\n"
+        except:
+            content = content + '<h2>DB Connection/sql error</h2>' + "\n" + '<textarea>' + query + '</textarea>' + "\n" 
+        
+        else:   
+            
+            content = content + '<table border=1><tr><td colspan=9 align=center><h1>sys.listitem.' + h_label + ' :</h1></td></tr>'  + "\n"
+            
+            content = content + """<tr><td colspan=9 align=center>
+                <b>A</b>vailable, <font color=green><b>N</b></font>ew, <font color=red><b>U</b></font>navailable,
+                <font color=yellow><b>D</b></font>epricated</td></tr>"""
+            
+            content = content + '<tr><td>V19</td><td>V20</td><td>Base Code</td><td>Keys Used</td><td>Code run</td><td>Result</td>'
+            content = content + '<td>Data Type</td><td>Return Type</td><td>Doc Notes</td></tr>' + "\n"
+           
+            for stuff in db_data:
                 
-                content_txt = content_txt + 'Jsonrpc VideoLibrary.GetMovies data available:' + divider_txt + "\n"
-                content_txt = content_txt + command + "\n"
-                content_txt = content_txt + json.dumps(result, indent=2) + "\n";
-                content_txt = content_txt + divider_txt + "\n"
-
-            else:
-                content = content +  '<h1>Jsonrpc VideoLibrary.GetMovies data not available via json:</h1>' + divider + "\n"
-                content = content + command + "\n"
+                my_stuff = list(stuff)
                 
-                content_txt = content_txt + 'Jsonrpc VideoLibrary.GetMovies data not available via json:' + divider_txt + "\n"
-                content_txt = content_txt + command + "\n"
-            
-
-    
-    
-            command = '{"jsonrpc": "2.0", ' \
-                    '"method": "VideoLibrary.GetEpisodes", ' \
-                    '"params": { ' \
-                    '"filter": %s, ' \
-                    '"sort": { "order": "ascending", "method": "label" }, ' \
-                    '"properties": [ "title", "plot", "votes", "rating", ' \
-                    '"writer","firstaired","playcount","runtime","director", ' \
-                    '"productioncode","season","episode","originaltitle", ' \
-                    '"showtitle","cast","streamdetails","lastplayed","fanart", ' \
-                    '"thumbnail","file","resume","tvshowid","dateadded", ' \
-                    '"uniqueid","art","specialsortseason","specialsortepisode", ' \
-                    '"userrating","seasonid","ratings"] ' \
-                    '}, "id": 1}' % filter            
-    
-    #    debug = 'DevView DEBUG json call: ' + str(command)
-    #    xbmc.log(debug, level=xbmc.LOGINFO)
-    
-    
-            result = json.loads(xbmc.executeJSONRPC(command))
-            
-            matches = result['result']['limits']['total']
-            
-            if matches > 0:
-                content = content + divider + '<h1>Jsonrpc VideoLibrary.GetEpisodes data available:</h1>' + divider + "\n"
-                content = content + command + "\n"
-                content = content + "<pre>\n"
-                content = content + json.dumps(result, indent=2)
-                content = content +  "</pre>\n"
-                content_txt = content_txt + 'Jsonrpc VideoLibrary.GetEpisodes data available:' + divider_txt + "\n"
-                content_txt = content_txt + command + "\n"
-                content_txt = content_txt + json.dumps(result, indent=2) + "\n";
-                content_txt = content_txt + divider_txt + "\n"
-
-            else:
-                content = content +  '<h1>Jsonrpc VideoLibrary.GetEpisodes data not available via json:</h1>' + divider + "\n"
-                content = content + command + "\n"
+                if my_stuff[0] == 'A':
+                    my_stuff[0] = '<b>A</b>'
+                elif my_stuff[0] == 'N':
+                    my_stuff[0] = '<font color=green><b>N</b></font>'
+                elif my_stuff[0] == 'U':
+                    my_stuff[0] = '<font color=red><b>U</b></font>'
+                elif my_stuff[0] == 'D':
+                    my_stuff[0] = '<font color=yellow><b>D</b></font>'
+                else:
+                    my_stuff[0] = 'ERROR'
                 
-                content_txt = content_txt + 'Jsonrpc VideoLibrary.GetEpisodes data not available via json:' + divider_txt + "\n"
-                content_txt = content_txt + command + "\n"
-
-    
-            song_file = xbmc.getInfoLabel('ListItem.Path')
-    
-            command = '{"jsonrpc": "2.0", ' \
-                    '"method": "AudioLibrary.GetSongs", ' \
-                    '"params": { ' \
-                    '"filter": {"field": "path", "operator": "is", "value": "%s"}, ' \
-                    '"sort": { "order": "ascending", "method": "label" }, ' \
-                    '"properties": [ "title", "artist", "albumartist", "genre", ' \
-                    '"year", "rating", "album", "track", "duration", "comment", ' \
-                    '"lyrics", "musicbrainztrackid", "musicbrainzartistid", ' \
-                    '"musicbrainzalbumid", "musicbrainzalbumartistid", ' \
-                    '"playcount", "fanart", "thumbnail", "file", "albumid", ' \
-                    '"lastplayed", "disc", "genreid", "artistid", "displayartist", ' \
-                    '"albumartistid", "albumreleasetype", "dateadded", "votes", ' \
-                    '"userrating", "mood", "contributors", "displaycomposer", ' \
-                    '"displayconductor", "displayorchestra", "displaylyricist", ' \
-                    '"sortartist", "art", "sourceid", "disctitle", "releasedate", ' \
-                    '"originaldate", "bpm", "samplerate", "bitrate", "channels", ' \
-                    '"datemodified","datenew" ] ' \
-                    '}, "id": 1}' % song_file            
-    
-    #    debug = 'DevView DEBUG json call: ' + str(command)
-    #    xbmc.log(debug, level=xbmc.LOGINFO)
-    
-            result = json.loads(xbmc.executeJSONRPC(command))
-            
-            matches = result['result']['limits']['total']            
-            
-            if matches > 0:
-                content = content + divider + '<h1>Jsonrpc AudioLibrary.GetSongs data available:</h1>' + divider + "\n"
-                content = content + command + "\n"
-                content = content + "<pre>\n"
-                content = content + json.dumps(result, indent=2)
-                content = content +  "</pre>\n"
-                content_txt = content_txt + 'Jsonrpc VideoLibrary.GetEpisodes data available:' + divider_txt + "\n"
-                content_txt = content_txt + command + "\n"
-                content_txt = content_txt + json.dumps(result, indent=2) + "\n";
-                content_txt = content_txt + divider_txt + "\n"
-
-            else:
-                content = content +  '<h1>Jsonrpc AudioLibrary.GetSongs data not available via json:</h1>' + divider + "\n"
-                content = content + command + "\n"
+                if my_stuff[1] == 'A':
+                    my_stuff[1] = '<b>A</b>'
+                elif my_stuff[1] == 'N':
+                    my_stuff[1] = '<font color=green><b>N</b></font>'
+                elif my_stuff[1] == 'U':
+                    my_stuff[1] = '<font color=red><b>U</b></font>'
+                elif my_stuff[1] == 'D':
+                    my_stuff[1] = '<font color=yellow><b>D</b></font>'
+                else:
+                    my_stuff[1] = 'ERROR'                
                 
-                content_txt = content_txt + 'Jsonrpc AudioLibrary.GetSongs data not available via json:' + divider_txt + "\n"
-                content_txt = content_txt + command + "\n"
+                stuff = tuple(my_stuff)
+                
+                content = content + '<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td>' \
+                    '<td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>' % stuff
+                content = content + "\n"
+    
+    
+    
+        # see if there is any xbmc.getInfoLabel data and output it
+        query = "SELECT A.base_code,A.code_run,A.results,B.notes"
+        query = query + " FROM results AS A LEFT JOIN listitem AS B ON B.listitem = A.base_code"
+        query = query + " WHERE A.code_type = 'xbmc.getInfoLabel' ORDER BY A.base_code,A.code_run"
+        
+        try:
+            cursor = self.DB.cursor()
+            cursor.execute(query)
+            db_data = cursor.fetchall()
+            
+        except:
+            content = content + '<h2>DB Connection/sql error</h2>' + "\n" 
+        
+        else:   
+            
+            content = content + '<table border=1><tr><td colspan=4 align=center><h1>xbmc.getInfoLabel :</h1></td></tr>'  + "\n"
+            content = content + '<tr><td>Base Code</td><td>Code run</td><td>Result</td><td>Doc Notes</td></tr>' + "\n"
+           
+            for stuff in db_data:
+                content = content + '<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td>' % stuff
+                content = content + "\n"
 
+
+
+
+
+        # display any Json RPC data
+        query = "SELECT A.base_code,A.code_run,A.results"
+        query = query + " FROM results AS A"
+        query = query + " WHERE A.code_type = 'JsonRPC' ORDER BY A.base_code,A.code_run"
+        
+        try:
+            cursor = self.DB.cursor()
+            cursor.execute(query)
+            db_data = cursor.fetchall()
             
-            content = content + '</body></html>' + "\n"
+        except:
+            content = content + '<h2>DB Connection/sql error</h2>' + "\n" 
+        
+        else:   
             
+            content = content + '<table border=1><tr><td colspan=3 align=center><h1>JsonRPC :</h1></td></tr>'  + "\n"
+            content = content + '<tr><td>Json Call</td><td>Result Path</td><td>Result</td></tr>' + "\n"
+            
+            curr_call = ''
+           
+            for stuff in db_data:
+                if curr_call != stuff[0]:
+                    curr_call = stuff[0]
+                    content = content + '<tr><td colspan=3 align=center><b>' + stuff[0] + '<b></td></tr>' + "\n"
+                    content = content + '<tr><td colspan=3 align=center><b>' + json_call[curr_call] + '<b></td></tr>' + "\n"
+                    
+                    
+                    
+                # if stuff[2] =~ /^image::(XXXXXXXXXX)
+                # take this url, urldecode it, then insert in html image tags and add to end of stuff[2] to display image in html
+                
+                
+                a = str(stuff[0])
+                b = str(stuff[1])
+                c = str(stuff[2])
+                
+                if re.search("^image\:\/\/",c) :
+                    image = c.replace("image://","")
+                    image = re.sub(r"/$","", image)
+                    image = urllib.parse.unquote_plus(image)
+                    
+                    if not re.search("^http", image):
+                        image = image.replace('\\','/')
+                        image = 'file:///' + image
+                    
+                    
+                    
+                    html_image = '<img src="' + image + '" height=200>'
+                    c = c + html_image
+
+                content = content + '<tr><td>%s</td><td>%s</td><td>%s</td></tr>' % (a, b, c)
+                content = content + "\n"        
+
+        content = content + '</table>' + "\n" 
+
+
         file = os.path.join(profilePath, 'index.html')
         buffer = content
         with xbmcvfs.File(file, 'w') as f:
             result = f.write(buffer)
             
-        file = os.path.join(profilePath, 'index.txt')
-        buffer = content_txt
-        with xbmcvfs.File(file, 'w') as f:
-            result = f.write(buffer)
+#        file = os.path.join(profilePath, 'index.txt')
+#        buffer = content_txt
+#        with xbmcvfs.File(file, 'w') as f:
+#            result = f.write(buffer)
+    
+#        file = os.path.join(profilePath, 'index.tab')
+#        buffer = content_db
+#        with xbmcvfs.File(file, 'w') as f:
+#            result = f.write(buffer)
+#     TODO , dump results table to a csv file for export        
+    
     
         return ''
 

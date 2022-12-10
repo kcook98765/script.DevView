@@ -80,6 +80,9 @@ if __name__ == '__main__':
     monitor = xbmc.Monitor()
     HOST, PORT = "localhost", 9999
 
+    # check https://github.com/eschava/soap4me-proxy/blob/master/service.py
+    # for another way to fire up server
+
     # Create the server, binding to localhost on port 9999
     with socketserver.TCPServer((HOST, PORT), MyTCPHandler) as server:
         # Activate the server; this will keep running until you
