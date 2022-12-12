@@ -17,7 +17,7 @@ profilePath = xbmcvfs.translatePath( ADDON.getAddonInfo('profile') )
 if not os.path.exists(profilePath):
     os.makedirs(profilePath)
 
-DB_PATH = xbmcvfs.translatePath(os.path.join(profilePath, 'devview3.db'))
+DB_PATH = xbmcvfs.translatePath(os.path.join(profilePath, 'devview4.db'))
 SQL_PATH = xbmcvfs.translatePath(os.path.join(ADDON_PATH, 'resources', 'lib', 'tables.sql'))
 DB_DATA_INFOTAG = xbmcvfs.translatePath(os.path.join(ADDON_PATH, 'resources', 'lib', 'infotag.csv'))
 DB_DATA_LISTITEM = xbmcvfs.translatePath(os.path.join(ADDON_PATH, 'resources', 'lib', 'listitem.csv'))
