@@ -155,8 +155,8 @@ class report():
         
         def store_results (code_type,base_code,code_run,results):
             
-            debug = 'store_results called with: ' + str(code_type) + ':' + str(base_code) + ':' + str(code_run) + ':' + str(results)
-            xbmc.log(debug, level=xbmc.LOGINFO)
+#            debug = 'store_results called with: ' + str(code_type) + ':' + str(base_code) + ':' + str(code_run) + ':' + str(results)
+#            xbmc.log(debug, level=xbmc.LOGINFO)
             
             
             

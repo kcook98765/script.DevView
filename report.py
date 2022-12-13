@@ -32,7 +32,7 @@ profilePath = xbmcvfs.translatePath( ADDON.getAddonInfo('profile') )
 if not os.path.exists(profilePath):
     os.makedirs(profilePath)
 
-DB_PATH = xbmcvfs.translatePath(os.path.join(profilePath, 'devview3.db'))
+DB_PATH = xbmcvfs.translatePath(os.path.join(profilePath, 'devview4.db'))
 
 
 def get_url(**kwargs):
@@ -84,7 +84,8 @@ def show_directory():
             
                 else:
                     for stuff2 in db_data2:
-                        this_label = 'JsonRPC-' + stuff2[0]      
+                        this_label = 'JsonRPC-' + stuff2[0]
+
                         list_item = xbmcgui.ListItem(label=this_label)
                         list_item.setInfo('video', {'title': this_label,
                                                 'genre': '',
