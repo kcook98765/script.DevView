@@ -84,6 +84,7 @@ def show_directory():
             
                 else:
                     for stuff2 in db_data2:
+
                         this_label = 'JsonRPC-' + stuff2[0]
 
                         list_item = xbmcgui.ListItem(label=this_label)

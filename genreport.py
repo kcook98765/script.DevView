@@ -6,6 +6,7 @@ import csv
 import sqlite3
 import contextlib
 import urllib.parse
+from datetime import datetime, timezone
 from cProfile import label
 
 ADDON = xbmcaddon.Addon()
@@ -89,6 +90,32 @@ class report():
     
     def gather_data(self):
         
+        self.dialog = xbmcgui.DialogProgressBG()
+        self.dialog.create('DevView processing')
+        self.dialog.update(0, message='Start collecting data')
+        
+        def strp(value, form):
+            """
+            Helper function to safely create datetime objects from strings
+            :return: datetime - parsed datetime object
+            """
+            # pylint: disable=broad-except
+            from time import strptime
+            def_value = datetime.utcfromtimestamp(0)
+            try:
+                return datetime.strptime(value, form)
+            except TypeError:
+                try:
+                    return datetime(*(strptime(value, form)[0:6]))
+                except ValueError:
+                    return def_value
+            except Exception:
+                return def_value
+        
+        
+        
+        
+        
         def flatten(adict):
             stack = [[adict, []]]
             x=0
@@ -132,6 +159,8 @@ class report():
             return ''
 
         def jsonrpc_properties (param,field):
+            msg = 'collecting Json data for ' + param
+            self.dialog.update(0, message=msg)
             props = ''
             command = '{ "jsonrpc": "2.0", "method": "JSONRPC.Introspect", "params": { "filter": { "id": "' + param + '", "type": "method" } }, "id": 1 }'
             result = json.loads(xbmc.executeJSONRPC(command))
@@ -203,6 +232,17 @@ class report():
         musicinfo = sys.listitem.getMusicInfoTag()
         has_pvr = xbmc.getInfoLabel('System.HasPVRAddon')
         
+        file_ext = xbmc.getInfoLabel('ListItem.FileExtension')
+        channelid = 0
+        if file_ext == 'epg':        
+            channelid = xbmc.getInfoLabel('ListItem.Path')
+            channelid = re.sub(r"pvr.*guide\/", "", channelid)
+            channelid = re.sub(r"\/", "", channelid)
+            channelid = re.sub(r"^0+", "", channelid)
+            channelid = int(channelid)
+            
+        
+        
         # seems this is not accurate for "season", but getMediaType does work ?
         # dbtype = xbmc.getInfoLabel('ListItem.DBTYPE')
         
@@ -210,10 +250,10 @@ class report():
 
         # videos (video, movie, set, tvshow, season, episode, musicvideo) or for audio (music, song, album, artist).
         
-        if dbtype == 'video' or dbtype == 'movie' or dbtype == 'set' or dbtype == 'tvshow' or dbtype == 'season' or dbtype == 'episode' or dbtype == 'musicvideo':
+        if dbtype == 'video' or dbtype == 'movie' or dbtype == 'set' or dbtype == 'tvshow' or dbtype == 'season' or dbtype == 'episode' or dbtype == 'musicvideo' :
     
 
-        
+            self.dialog.update(0, message='collecting videoInfoTag data')
             
 
             # See what "get" options are available
@@ -305,7 +345,7 @@ class report():
         
         elif dbtype == 'music' or dbtype == 'song' or dbtype == 'album' or dbtype == 'artist':
         
-            
+            self.dialog.update(0, message='collecting MusicInfoTag data')
 
             # See what "get" options are available
             whatup = dir(musicinfo)
@@ -389,6 +429,8 @@ class report():
                                 
 
         # now do listitems
+
+        self.dialog.update(0, message='collecting ListItem data')
 
         # open DB, select all listitems
         query = "SELECT listitem,notes FROM listitem WHERE 1 ORDER BY listitem"
@@ -558,7 +600,7 @@ class report():
             store_json_results(data,prop_name)
 
         
-        if has_pvr:
+        if file_ext == 'epg':
             prop_name = 'PVR.GetProperties'
             props = jsonrpc_properties(prop_name,'PVR.Property.Name')
             command = '{"jsonrpc": "2.0", "method": "%s", "params": { "properties": [%s] }, "id": 1}' % (prop_name, props)
@@ -568,19 +610,121 @@ class report():
             store_json_results(data,prop_name)
 
 
+            selected_date_time = xbmc.getInfoLabel('ListItem.DateTime')
+            # selected raw date: 12/13/2022 4:30:00 PM
+            match = re.match(r'^(\d{2})\/(\d{2})\/(\d{4}) (\d{1,2})\:(\d{2})\:(\d{2}) (.{2})' , selected_date_time)
+            if match:
+                (tdm, tdd, tdy, tdh, tdmi, tds, tmm) = match.groups()
+#                debug = str(tdy) + ' : ' + str(tdm) + ' : ' + str(tdd) + ' : ' + str(tdh) + ' : ' + str(tdmi) + ' : ' + str(tds) + ' : ' + str(tmm)
+#                xbmc.log(debug, level=xbmc.LOGINFO)
+                
+                if tmm == 'PM':
+                    tdh = int(tdh) + 12
+                    tdh = str(tdh)
+                    
+                if len(tdh) == 1:
+                    tdh = '0' + str(tdh)
+                
+                chk_raw = tdy + '-' + tdm + '-' + tdd + ' ' + str(tdh) + ':' + tdmi  + ':' + tds 
 
+#                debug = 'selected chk_raw: ' + str(chk_raw)
+#                xbmc.log(debug, level=xbmc.LOGINFO)
+                
+                # selected raw chk_match: 2022-12-14 11:00:00
+
+                
+                fmt = "%Y-%m-%d %H:%M:%S"
+                
+                
+#                debug = 'about to run: datetime.strptime(' + str(chk_raw) + ', ' + str(fmt) + ')'
+#                xbmc.log(debug, level=xbmc.LOGINFO)
+                
+                chk_match = strp(chk_raw, fmt)
+               
+                
+                ndate = chk_match.timestamp()
+                
+                chk_match = datetime.fromtimestamp(ndate, tz=timezone.utc)
+                
+                chk_match = str(chk_match)
+                
+                chk_match = chk_match.replace('+00:00','')
+            
+#            2022-12-13 00:30:00
+
+#            debug = 'selected raw date: ' + str(selected_date_time)
+#            xbmc.log(debug, level=xbmc.LOGINFO)
+
+
+#            debug = 'converted raw date: ' + str(chk_match)
+#            xbmc.log(debug, level=xbmc.LOGINFO)
+
+            if channelid > 0:
+                command = '{"jsonrpc": "2.0", "method": "PVR.GetBroadcasts", "params": { "channelid": %s, "properties": ["starttime"] }, "id": 1}' % channelid
+               
+
+#                debug = 'json: ' + str(command)
+#                xbmc.log(debug, level=xbmc.LOGINFO) 
+                
+                result = json.loads(xbmc.executeJSONRPC(command))
+                
+                fbid = 0
+
+
+                for i in range(0, result['result']['limits']['total']):
+                    bid = result['result']['broadcasts'][i]['broadcastid']
+                    startt = result['result']['broadcasts'][i]['starttime']
+
+#                    debug = 'bid: ' + str(bid) + ' , stattime: ' + str(startt)
+#                    xbmc.log(debug, level=xbmc.LOGINFO)
+                    
+                    # bid: 39165 , stattitme: 2022-12-13 00:30:00
+                    
+                    match = re.match(r'^(\d{4})\-(\d{2})\-(\d{2}) (\d{2})\:(\d{2})\:(\d{2})' , startt)
+                    if match:
+                        (dy, dm, dd, dh, dm, ds) = match.groups()
+#                        debug = str(dy) + ' : ' + str(dm) + ' : ' + str(dd) + ' : ' + str(dh) + ' : ' + str(dm) + ' : ' + str(ds)
+#                        xbmc.log(debug, level=xbmc.LOGINFO)
+                    
+                    if chk_match == startt:
+#                        debug = 'FOUND...... ' + chk_match + ' = ' + startt
+#                        xbmc.log(debug, level=xbmc.LOGINFO)
+                        fbid = bid
+                        break
+
+#                    fmt = "%Y-%m-%d %H:%M:%S"
+#                    startt_conv = datetime.strptime(startt, fmt)
+                    
+#                    debug = 'convert stattitme: ' + str(startt_conv)
+#                    xbmc.log(debug, level=xbmc.LOGINFO)
+                        
+
+
+            if fbid > 0:
+#                debug = 'fbid found!: ' + str(fbid)
+#                xbmc.log(debug, level=xbmc.LOGINFO)
+                
+                
+                # need broadcastid and playerid below to trigger
+                prop_name = 'PVR.GetBroadcastDetails'
+                props = jsonrpc_properties(prop_name,'PVR.Fields.Broadcast')
+                command = '{"jsonrpc": "2.0", "method": "%s", "params": { "broadcastid" : %s, "properties": [%s] }, "id": 1}' % (prop_name, bid, props)
+
+#                debug = 'run json: ' + str(command)
+#                xbmc.log(debug, level=xbmc.LOGINFO)                
+                
+                
+                
+                json_call[prop_name] = command
+                result = json.loads(xbmc.executeJSONRPC(command))
+                data = flatten(result)
+                store_json_results(data,prop_name)               
+               
+               
+                
 
         if 1 == 2:
             
-            # need broadcastid and playerid below to trigger
-            prop_name = 'PVR.GetBroadcastDetails'
-            props = jsonrpc_properties(prop_name,'PVR.Fields.Broadcast')
-            command = '{"jsonrpc": "2.0", "method": "%s", "params": { "broadcastid" : %s "properties": [%s] }, "id": 1}' % (prop_name, broadcastid, props)
-            json_call[prop_name] = command
-            result = json.loads(xbmc.executeJSONRPC(command))
-            data = flatten(result)
-            store_json_results(data,prop_name)
-    
             prop_name = 'Player.GetItem'
             props = jsonrpc_properties(prop_name,'List.Fields.All')
             command = '{"jsonrpc": "2.0", "method": "%s", "params": { "playerid" : %s, "properties": [%s] }, "id": 1}' % (prop_name, playerid, props)
@@ -609,37 +753,25 @@ class report():
         data = flatten(result)
         store_json_results(data,prop_name)
 
-            # 5.1.3 Addons.GetAddons
-            # http://127.0.0.1:8080/jsonrpc?request={%20%22jsonrpc%22:%20%222.0%22,%20%22method%22:%20%22JSONRPC.Introspect%22,%20%22params%22:%20{%20%22filter%22:%20{%20%22id%22:%20%22Addons.GetAddons%22,%20%22type%22:%20%22method%22%20}%20},%20%22id%22:%201%20}
-# this one takes a while, commented out for now, maybe add setting to enable/disable this lookup?
-#            prop_name = 'Addons.GetAddons'
-#            props = jsonrpc_properties(prop_name,'Addon.Fields')
-#            command = '{"jsonrpc": "2.0", "method": "%s", "params": { "properties": [%s] }, "id": 1}' % (prop_name, props)
-#            json_call[prop_name] = command
-#            result = json.loads(xbmc.executeJSONRPC(command))
-#            data = flatten(result)
-#            store_json_results(data,prop_name)
+        # this one takes a while
+#        prop_name = 'Addons.GetAddons'
+#        props = jsonrpc_properties(prop_name,'Addon.Fields')
+#        command = '{"jsonrpc": "2.0", "method": "%s", "params": { "properties": [%s] }, "id": 1}' % (prop_name, props)
+#        json_call[prop_name] = command
+#        result = json.loads(xbmc.executeJSONRPC(command))
+#        data = flatten(result)
+#        store_json_results(data,prop_name)
 
-            # http://127.0.0.1:8080/jsonrpc?request={%20%22jsonrpc%22:%20%222.0%22,%20%22method%22:%20%22JSONRPC.Introspect%22,%20%22params%22:%20{%20%22filter%22:%20{%20%22id%22:%20%22Settings.GetSettings%22,%20%22type%22:%20%22method%22%20}%20},%20%22id%22:%201%20}
-# takes a while, maybe use setting to enable/disable
-#            prop_name = 'Settings.GetSettings'
-#            command = '{"jsonrpc": "2.0", "method": "%s", "params": { }, "id": 1}' % (prop_name)
-#            json_call[prop_name] = command
-#            result = json.loads(xbmc.executeJSONRPC(command))
-#            data = flatten(result)
-#            store_json_results(data,prop_name)
+        # takes a while, maybe use setting to enable/disable
+#        prop_name = 'Settings.GetSettings'
+#        command = '{"jsonrpc": "2.0", "method": "%s", "params": { }, "id": 1}' % (prop_name)
+#        json_call[prop_name] = command
+#        result = json.loads(xbmc.executeJSONRPC(command))
+#        data = flatten(result)
+#        store_json_results(data,prop_name)
 
 
-
-#        if dbtype == 'music' or dbtype == 'song' or dbtype == 'album' or dbtype == 'artist':
-#        if dbtype == 'video' or dbtype == 'movie' or dbtype == 'set' or dbtype == 'tvshow' or dbtype == 'season' or dbtype == 'episode' or dbtype == 'musicvideo':
-            
-
-
-
-
-
-
+        self.dialog.update(0, message='Data collected, now producing html report')
 
 
         ######################################
@@ -661,68 +793,69 @@ class report():
         # see if there is any getVideoInfoTag() data and output it
 
         # videos (video, movie, set, tvshow, season, episode, musicvideo) or for audio (music, song, album, artist).
-        
+        query = None
         if dbtype == 'video' or dbtype == 'movie' or dbtype == 'set' or dbtype == 'tvshow' or dbtype == 'season' or dbtype == 'episode' or dbtype == 'musicvideo':
             query = """SELECT B.V19,B.V20,A.base_code,B.keys,A.code_run,A.results,B.data_type,B.return_type,B.notes
             FROM results AS A LEFT JOIN infotag AS B ON B.function_name = A.base_code
             WHERE A.code_type = 'getVideoInfoTag()' AND B.data_type = 'video' ORDER BY A.base_code,A.code_run"""
             h_label = 'getVideoInfoTag()'
-        else:
+        elif dbtype == 'music' or dbtype == 'song' or dbtype == 'album' or dbtype == 'artist':
             query = """SELECT B.V19,B.V20,A.base_code,B.keys,A.code_run,A.results,B.data_type,B.return_type,B.notes
             FROM results AS A LEFT JOIN infotag AS B ON B.function_name = A.base_code
             WHERE A.code_type = 'getMusicInfoTag()' AND B.data_type = 'music' ORDER BY A.base_code,A.code_run"""
             h_label = 'getMusicInfoTag()'
-            
-        try:
-            cursor = self.DB.cursor()
-            cursor.execute(query)
-            db_data = cursor.fetchall()
-            
-        except:
-            content = content + '<h2>DB Connection/sql error</h2>' + "\n" + '<textarea>' + query + '</textarea>' + "\n" 
-        
-        else:   
-            
-            content = content + '<table border=1><tr><td colspan=9 align=center><h1>sys.listitem.' + h_label + ' :</h1></td></tr>'  + "\n"
-            
-            content = content + """<tr><td colspan=9 align=center>
-                <b>A</b>vailable, <font color=green><b>N</b></font>ew, <font color=red><b>U</b></font>navailable,
-                <font color=yellow><b>D</b></font>epricated</td></tr>"""
-            
-            content = content + '<tr><td>V19</td><td>V20</td><td>Base Code</td><td>Keys Used</td><td>Code run</td><td>Result</td>'
-            content = content + '<td>Data Type</td><td>Return Type</td><td>Doc Notes</td></tr>' + "\n"
-           
-            for stuff in db_data:
+         
+        if query != None:   
+            try:
+                cursor = self.DB.cursor()
+                cursor.execute(query)
+                db_data = cursor.fetchall()
                 
-                my_stuff = list(stuff)
+            except:
+                content = content + '<h2>DB Connection/sql error</h2>' + "\n" + '<textarea>' + query + '</textarea>' + "\n" 
+            
+            else:   
                 
-                if my_stuff[0] == 'A':
-                    my_stuff[0] = '<b>A</b>'
-                elif my_stuff[0] == 'N':
-                    my_stuff[0] = '<font color=green><b>N</b></font>'
-                elif my_stuff[0] == 'U':
-                    my_stuff[0] = '<font color=red><b>U</b></font>'
-                elif my_stuff[0] == 'D':
-                    my_stuff[0] = '<font color=yellow><b>D</b></font>'
-                else:
-                    my_stuff[0] = 'ERROR'
+                content = content + '<table border=1><tr><td colspan=9 align=center><h1>sys.listitem.' + h_label + ' :</h1></td></tr>'  + "\n"
                 
-                if my_stuff[1] == 'A':
-                    my_stuff[1] = '<b>A</b>'
-                elif my_stuff[1] == 'N':
-                    my_stuff[1] = '<font color=green><b>N</b></font>'
-                elif my_stuff[1] == 'U':
-                    my_stuff[1] = '<font color=red><b>U</b></font>'
-                elif my_stuff[1] == 'D':
-                    my_stuff[1] = '<font color=yellow><b>D</b></font>'
-                else:
-                    my_stuff[1] = 'ERROR'                
+                content = content + """<tr><td colspan=9 align=center>
+                    <b>A</b>vailable, <font color=green><b>N</b></font>ew, <font color=red><b>U</b></font>navailable,
+                    <font color=yellow><b>D</b></font>epricated</td></tr>"""
                 
-                stuff = tuple(my_stuff)
-                
-                content = content + '<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td>' \
-                    '<td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>' % stuff
-                content = content + "\n"
+                content = content + '<tr><td>V19</td><td>V20</td><td>Base Code</td><td>Keys Used</td><td>Code run</td><td>Result</td>'
+                content = content + '<td>Data Type</td><td>Return Type</td><td>Doc Notes</td></tr>' + "\n"
+               
+                for stuff in db_data:
+                    
+                    my_stuff = list(stuff)
+                    
+                    if my_stuff[0] == 'A':
+                        my_stuff[0] = '<b>A</b>'
+                    elif my_stuff[0] == 'N':
+                        my_stuff[0] = '<font color=green><b>N</b></font>'
+                    elif my_stuff[0] == 'U':
+                        my_stuff[0] = '<font color=red><b>U</b></font>'
+                    elif my_stuff[0] == 'D':
+                        my_stuff[0] = '<font color=yellow><b>D</b></font>'
+                    else:
+                        my_stuff[0] = 'ERROR'
+                    
+                    if my_stuff[1] == 'A':
+                        my_stuff[1] = '<b>A</b>'
+                    elif my_stuff[1] == 'N':
+                        my_stuff[1] = '<font color=green><b>N</b></font>'
+                    elif my_stuff[1] == 'U':
+                        my_stuff[1] = '<font color=red><b>U</b></font>'
+                    elif my_stuff[1] == 'D':
+                        my_stuff[1] = '<font color=yellow><b>D</b></font>'
+                    else:
+                        my_stuff[1] = 'ERROR'                
+                    
+                    stuff = tuple(my_stuff)
+                    
+                    content = content + '<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td>' \
+                        '<td>%s</td><td><span style="width: 300px; word-wrap: anywhere;">%s</span></td><td>%s</td><td>%s</td><td>%s</td></tr>' % stuff
+                    content = content + "\n"
     
     
     
@@ -745,7 +878,7 @@ class report():
             content = content + '<tr><td>Base Code</td><td>Code run</td><td>Result</td><td>Doc Notes</td></tr>' + "\n"
            
             for stuff in db_data:
-                content = content + '<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td>' % stuff
+                content = content + '<tr><td>%s</td><td>%s</td><td><span style="width: 300px; word-wrap: anywhere;">%s</span></td><td>%s</td>' % stuff
                 content = content + "\n"
 
 
@@ -799,10 +932,10 @@ class report():
                     
                     
                     
-                    html_image = '<img src="' + image + '" height=200>'
+                    html_image = '<br><img src="' + image + '" height=200>'
                     c = c + html_image
 
-                content = content + '<tr><td>%s</td><td>%s</td><td>%s</td></tr>' % (a, b, c)
+                content = content + '<tr><td>%s</td><td>%s</td><td><span style="width: 300px; word-wrap: anywhere;">%s</span></td></tr>' % (a, b, c)
                 content = content + "\n"        
 
         content = content + '</table>' + "\n" 
@@ -824,6 +957,7 @@ class report():
 #            result = f.write(buffer)
 #     TODO , dump results table to a csv file for export        
     
+        self.dialog.close()
     
         return ''
 
