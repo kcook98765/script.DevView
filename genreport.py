@@ -485,7 +485,7 @@ class report():
                     xbmcresult_txt = ''
                 
                 if xbmcresult != '':
-                    store_results('xbmc.getInfoLabel',key,key,xbmcresult_txt)
+                    store_results('xbmc.getInfoLabel',orig_key,key,xbmcresult_txt)
         
         json_call = {}
         video_dbid = videoInfoTag.getDbId()
