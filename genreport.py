@@ -504,7 +504,7 @@ class report():
 
         if video_dbid > 0 and dbtype == 'set':
             prop_name = 'VideoLibrary.GetMovieSetDetails'
-            props = jsonrpc_properties(prop_name,'Video.Fields.Movie')
+            props = jsonrpc_properties(prop_name,'Video.Fields.MovieSet')
             command = '{"jsonrpc": "2.0", "method": "%s", "params": { "setid" : %s, ' \
                     '"properties": [%s] }, "id": 1}' % (prop_name, video_dbid, props)
             json_call[prop_name] = command
